@@ -15,11 +15,23 @@ class Game
     private GAME_HEIGHT: number;
     private GAME_SHIFT_X: number;
     private GAME_SHIFT_Y: number;
+    private gameType: number;
     private coolDown: boolean;
     private gameReady: boolean;
     private gameStarted: boolean;
     private gameOver: boolean;
     private isRedTurn: boolean;
+    private isPlayerTurn: boolean;
+    private botThinking: boolean;
+    private elapsedTime: number;
+    private timer : number;
+
+    private DEPTH: number;
+    private MAX_VALUE: number;
+    private WIN_VALUE: number;
+    private TIEBREAK: boolean;
+    private FIRST_MOVE: boolean;
+    
 
     // TypeScript will throw an error if you define a type but don't initialize in the constructor
     // This can be prevented by including undefined as a second possible type
@@ -35,6 +47,7 @@ class Game
 
 
     private gameBoard : Array<Array<number>>;
+    private spaceValues : Array<Array<number>>;
     
     constructor()
     {
@@ -49,6 +62,17 @@ class Game
         this.gameStarted = false;
         this.gameOver = false;
         this.isRedTurn = true;
+        this.isPlayerTurn = false;
+        this.botThinking = false;
+        this.gameType = 0;
+        this.elapsedTime = 0;
+        this.timer = 0;
+
+        this.DEPTH = 7;
+        this.MAX_VALUE = 10000000;
+        this.WIN_VALUE = 1000;
+        this.TIEBREAK = false;
+        this.FIRST_MOVE = true;
 
         this.gameBoard =    [[0,0,0,0,0,0,0],
                             [0,0,0,0,0,0,0],
@@ -56,6 +80,13 @@ class Game
                             [0,0,0,0,0,0,0],
                             [0,0,0,0,0,0,0],
                             [0,0,0,0,0,0,0]];
+        
+        this.spaceValues =  [[3,4,5,7,5,4,3],
+                            [4,6,8,10,8,6,4],
+                            [5,8,11,13,11,8,5],
+                            [5,8,11,13,11,8,5],
+                            [4,6,8,10,8,6,4],
+                            [3,4,5,7,5,4,3]];
     }
 
     start() : void 
@@ -178,11 +209,13 @@ class Game
     }
 
 
-    private reset() : void {
+    private reset() : void
+    {
         window.location.reload();
     }
 
-    private startGame(type : number) : void {
+    private startGame(type : number) : void
+    {
         this.gameReady = true;
         this.helpText!.visible = false;
         this.menuRedText!.visible = false;
@@ -190,8 +223,24 @@ class Game
         this.menuYellowText!.visible = false;
         this.menuHighlight!.visible = false;
         //this.winText!.visible = false;
+        if (type == 0) {
+            this.isPlayerTurn = true;
+        } else if (type == 1) {
+            this.isPlayerTurn = false;
+        } else {
+            this.isPlayerTurn = true;
+        }
+
+        this.gameType = type;
+        
         this.displayBoard();
+
+        if (type == 1) {
+            this.think();
+        }
     }
+
+    
 
     
 
@@ -199,6 +248,8 @@ class Game
     // for color: 1 = red, -1 = yellow.
     private addPiece(col : number) : boolean
     {
+        this.coolDown = true;
+
         if (!this.gameStarted) {
             this.gameStarted = true;
         }
@@ -210,7 +261,10 @@ class Game
             color = -1;
         }
 
-        this.coolDown = true;
+        // Ensure that AI always plays as positive numbers
+        if (this.gameType == 0) {
+            color = -color;
+        }
         
         var openCol = false;
         var row = 0
@@ -226,6 +280,11 @@ class Game
         if (!openCol) {
             return openCol;
         }
+
+        // Switch back colors for display
+        if (this.gameType == 0) {
+            color = -color;
+        }
         
         if (color == -1) {
             var piece = this.yellowPiece!.place(new paper.Point(53 + col*49, 0));
@@ -239,13 +298,17 @@ class Game
 
         this.isRedTurn = !this.isRedTurn;
 
-        
+        if (this.gameType < 2) {
+            this.isPlayerTurn = !this.isPlayerTurn;
+        }
 
 		return openCol;
     }
 
     private drawWinArrow(arrowPos : number, arrowDir : number, color : number) : void
     {
+        this.gameOver = true;
+
         var arrowX = arrowPos % 10;
         var arrowY = Math.floor(arrowPos / 10);
 
@@ -279,7 +342,12 @@ class Game
         path.rotation = rot;
         path.addTo(this.game!);
 
-        // Update scoreboard
+        // Flip for yellow AI
+        if (this.gameType == 0) {
+            color = -color;
+        }
+
+        // Update win text
         if (color == 1) {
             this.winText!.content = "Red wins!";
             this.winText!.fillColor = new paper.Color("red");
@@ -292,7 +360,7 @@ class Game
 
         this.helpText!.content = "Click anywhere to play again!";
         this.helpText!.visible = true;
-        this.gameOver = true;
+        
     }
 
     
@@ -300,23 +368,32 @@ class Game
     // This method will be called once per frame
     private update(event: GameEvent) : void
     {
-        // Add code here
-        if (this.gameStarted) {
-
-            if (this.coolDown) {
-                if (this.GAME_HEIGHT - this.game!.firstChild.data.row * 49 > this.game!.firstChild.position.y) {
-                    this.game!.firstChild.data.vel += event.delta * 2000;
-                    this.game!.firstChild.position.y += this.game!.firstChild.data.vel * event.delta;
-                } else {
-                    this.game!.firstChild.position.y = this.GAME_HEIGHT - this.game!.firstChild.data.row * 49;
-                    if (this.coolDown) {
-                        this.checkWin();
-                        this.coolDown = false;
-                    } 
+        if (this.timer >= this.elapsedTime) {
+            if (this.gameStarted) {
+                if (this.coolDown) {
+                    if (this.GAME_HEIGHT - this.game!.firstChild.data.row * 49 > this.game!.firstChild.position.y) {
+                        this.game!.firstChild.data.vel += event.delta * 2000;
+                        this.game!.firstChild.position.y += this.game!.firstChild.data.vel * event.delta;
+                    } else {
+                        this.game!.firstChild.position.y = this.GAME_HEIGHT - this.game!.firstChild.data.row * 49;
+                        if (this.coolDown) {
+                            this.checkWin();
+    
+                            this.coolDown = false;
+                            if (!this.isPlayerTurn && !this.gameOver) { //&& !this.botThinking) {
+                                this.think();
+                            }
+                        } 
+                    }
                 }
+    
             }
-
+        
+        // Account for time lost from think() algorithm
+        } else {
+            this.timer += event.delta * 1000;
         }
+        
         
     }
 
@@ -381,7 +458,7 @@ class Game
             } else if (x > 470 && x < 720 && y > 350 && y < 400) {
                 this.startGame(2);
             }
-        } else if (!this.gameOver && !this.coolDown) {
+        } else if (!this.gameOver && !this.coolDown && this.isPlayerTurn) {
             if (event.point.y > 175 && event.point.y < 600) {
                 if (x > 425 && x < 474) {
                     this.addPiece(0);
@@ -412,6 +489,11 @@ class Game
             color = -1;
         } else { // Otherwise, check red
             color = 1;
+        }
+
+        // Flip colors for yellow AI
+        if (this.gameType == 0) {
+            color = -color;
         }
 
         var result = this.checkHorizontal(color);
@@ -478,9 +560,424 @@ class Game
     }
 
 
+    // Return highest unoccupied row of a col
+	private getTopRowOfCol(board : Array<Array<number>>, col : number) : number
+    {
+		for (var row = 0; row < board.length; row++) {
+			if (board[row][col] == 0) {
+				return row;
+			}
+		}
+		return -1;
+	}
+
+
+    // Retrieve space value from space_values array
+	private spaceValue(col : number) : number
+    {
+		if (col < 0 || col > this.gameBoard[0].length) {
+			return -1;
+		}
+
+        var row = this.getTopRowOfCol(this.gameBoard, col);
+		
+        if (row > 5) {
+            return -1;
+        }
+
+        return this.spaceValues[row][col];
+	}
+
+
+    // Print formatting for heuristic values at each col
+	private printHeuristics(moves : Array<number>, bestMove : number) : void
+    {
+
+        var myString = "";
+		myString += "DEPTH: " + this.DEPTH + "\n";
+		myString += "+-----+-----------+----------+" + "\n";
+		myString += "| col | heuristic | tiebreak |" + "\n";
+		myString += "+-----+-----------+----------+" + "\n";
+		
+		for (var i = 0; i < moves.length; i++) {
+			if (i == bestMove) {
+				myString += "| *" + (i+1);
+			} else {
+				myString += "|  " + (i+1);
+			}
+			
+			if (moves[i] < 0) {
+				myString += "  | " + moves[i];
+			} else {
+				myString += "  |  " + moves[i];
+			}
+			
+			if (this.TIEBREAK && moves[i] == moves[bestMove]) {
+                if (moves[i] <= -this.WIN_VALUE || moves[i] >= this.WIN_VALUE) {
+                    myString += "\t  | " + this.spaceValue(i) + "\t     |";
+                } else {
+                    myString += "\t\t  | " + this.spaceValue(i) + "\t     |";
+                }
+			} else if (moves[i] <= -this.MAX_VALUE) {
+				myString += " |\t\t     |";
+			} else if (moves[i] <= -this.WIN_VALUE || moves[i] >= this.WIN_VALUE) {
+				myString += "\t  |\t\t     |";
+			} else {
+				myString += "\t\t  |\t\t     |";
+			}
+			myString += "\n";
+		}
+		myString += "+-----+-----------+----------+" + "\n";
+
+        console.log(myString);
+	}
+
+
+    // Calculate space values for each candidate best move
+	private indexOfLargest(moves : Array<number>) : number {
+
+        if (moves.length == 0) {
+            return -1;
+        }
+
+        var index = 0;
+        var value = this.spaceValue(moves[0]);
+        var max = value;
+
+        for (var i = 1; i < moves.length; i++) {
+            value = this.spaceValue(moves[i]);
+            if (value > max) {
+                max = value;
+                index = i;
+            }
+        }
+        return moves[index];
+	}
+
+    // Place the best moves into an array, then return index of best move
+	// If necessary, calculate space values to resolve a tie
+	private indexOfBestMove(array : Array<number>) : number {
+
+        if (array.length == 0)
+            return -1;
+
+        var bestMoves = new Array<number>();
+        bestMoves.push(0);
+        
+        // Extract the best moves into an list
+        for (var i = 1; i < array.length; i++) {
+            if (array[i] > array[bestMoves[0]]) {
+                bestMoves = new Array<number>();
+                bestMoves.push(i);
+            } else if (array[i] == array[bestMoves[0]]) {
+                bestMoves.push(i);
+            }
+        }
+        
+        this.TIEBREAK = true;
+        
+        // No need to resolve tie if there is no tie
+        if (bestMoves.length == 1) {
+            this.TIEBREAK = false;
+            return bestMoves[0];
+        }
+        
+        return this.indexOfLargest(bestMoves);
+	}
 
 
 
+    // Place a piece on the 'pretend' board
+    private pretendAddPiece(board : Array<Array<number>>, col : number, color : number) : Array<Array<number>> {
+        for (var row = 0; row < board.length; row++) {
+            if (board[row][col] == 0) {
+                board[row][col] = color;
+                row = board.length;
+            }
+        }
+        return board;
+    }
+
+
+    // Used to update DEPTH
+    private countLegalMoves(board : Array<Array<number>>) : number {
+        var total = 0;
+        for (var col = 0; col < 7; col++) {
+            if (board[5][col] == 0) {
+                total++;
+            }
+        }
+        return total;
+    }
+
+
+
+    // Update the depth of thinking as the number of open cols reduce
+	private updateDEPTH(board : Array<Array<number>>) : void {
+		var numOpenCols = this.countLegalMoves(board);
+		if (numOpenCols == 7)
+			this.DEPTH = 8;
+		else if (numOpenCols == 6)
+			this.DEPTH = 9;
+		else if (numOpenCols == 5)
+			this.DEPTH = 10;
+		else if (numOpenCols == 4)
+			this.DEPTH = 11;
+		else if (numOpenCols == 3)
+			this.DEPTH = 14;
+		else if (numOpenCols == 2)
+			this.DEPTH = 12;
+		else if (numOpenCols == 1)
+			this.DEPTH = 6;
+		this.DEPTH -= 2;
+	}
+
+
+
+    // Thinking algorithm
+    private think() : void
+    {
+        this.timer = 0;
+        this.elapsedTime = 0;
+        var startTime = new Date().getTime();
+        this.botThinking = true;
+        console.log("Thinking...");
+		
+        // Deep copy of gameBoard.
+        var board = new Array<Array<number>>();
+        var moves = new Array<number>();
+        for (var i = 0; i < this.gameBoard.length; i++) {
+            board.push(this.gameBoard[i].slice());
+            moves.push(i);
+        }
+		moves.push(7);
+        
+		
+		//Update search depth based on number of open cols
+		this.updateDEPTH(board);
+		
+		if (this.FIRST_MOVE) {
+			this.FIRST_MOVE = false;
+			this.DEPTH = 4;
+		}
+		
+		for (var i = 0; i < moves.length; i++) {
+			
+			// Check if move is legal
+			if (board[5][i] == 0) {
+				moves[i] = this.minMaxAlgorithm(board, i, 1, this.DEPTH);
+			} else {
+				moves[i] = -this.MAX_VALUE;
+			}
+		}
+		
+		var bestMove = this.indexOfBestMove(moves);
+		
+		this.printHeuristics(moves, bestMove);
+		
+		// Play the best move. Will always be last line of think().
+        this.botThinking = false;
+        this.elapsedTime = new Date().getTime() - startTime;
+        console.log("time: ", this.elapsedTime);
+		this.addPiece(bestMove);
+    }
+
+
+    private minMaxAlgorithm(board : Array<Array<number>>, col : number, color : number, depth : number) : number {
+		
+		// Deep copy of board.
+        var newBoard = new Array<Array<number>>();
+        for (var i = 0; i < board.length; i++) {
+            newBoard[i] = board[i].slice();
+        }
+
+
+            
+
+		
+		// Add requested move.
+		newBoard = this.pretendAddPiece(newBoard, col, color);
+		
+		// Base case for end of searching
+		// Return heuristic analysis of board
+		if (depth <= 0) {
+			return this.heuristic(newBoard);
+		}
+		
+		// Found a win, return and do not continue searching
+		if (this.heuristic(newBoard) == this.WIN_VALUE * color) {
+			return this.WIN_VALUE * color;
+		}
+		
+		// Find value of strongest response for opponent
+		// Initially set to worst possible response
+		var bestResponse = color * this.MAX_VALUE;
+		
+		var noLegalMoves = true;
+		for (col = 0; col < 7; col++) {
+			
+			// Check if move is legal
+			if (newBoard[5][col] == 0) {
+				
+				// If response is stronger than bestResponse, update bestResponse
+				if (color == 1) {
+					bestResponse = Math.min(bestResponse, this.minMaxAlgorithm(newBoard, col, color * -1, depth-1));
+				} else {
+					bestResponse = Math.max(bestResponse, this.minMaxAlgorithm(newBoard, col, color * -1, depth-1));
+				}
+				
+				noLegalMoves = false;
+			}
+		}
+		
+		// No playable moves found, so return (draw)
+		if (noLegalMoves) {
+			return this.heuristic(newBoard);
+		}
+		
+		// Return strength plus strongest response
+		return bestResponse;
+	}
+
+
+
+
+
+
+
+
+
+
+
+    private heuristic(board : Array<Array<number>>) : number{
+		var score = 0;
+		var setScore = 0; // Value of a set of 4
+		var color = 0;
+		var multiplyer = 0;
+		
+		// Horizontal sets
+		for (var row = 0; row < board.length; row++) {
+			for (var col = 0; col < 4; col++) {
+				
+				setScore = 0;
+				color = 0;
+				multiplyer = 0;
+				for (var i = 0; i < 4; i++) {
+					if (color == 0 && board[row][col+i] == 1) {
+						color = 1;
+						setScore++;
+					} else if (color == 0 && board[row][col+i] == -1) {
+						color = -1;
+						setScore--;
+					} else if (board[row][col+i] == color) {
+						setScore += color;
+					} else if (board[row][col+i] == -color) {
+						setScore = 0;
+						break;
+					} else { // Extra povars for highest empty row in set
+						multiplyer = Math.max(multiplyer, row - this.getTopRowOfCol(board, col+i));
+					}
+				}
+				if (setScore == 4 || setScore == -4) {	// Found four in a row
+					return this.WIN_VALUE * color; 			// setScore = +/- 100
+				}
+				score += setScore;// * (6 - multiplyer);
+			}
+		}
+		
+		// Vertical sets
+		for (var row = 0; row < 3; row++) {
+			for (var col = 0; col < board[0].length; col++) {
+				
+				setScore = 0;
+				color = 0;
+				multiplyer = 0;
+				for (var i = 0; i < 4; i++) {
+					if (color == 0 && board[row+i][col] == 1) {
+						color = 1;
+						setScore++;
+					} else if (color == 0 && board[row+i][col] == -1) {
+						color = -1;
+						setScore--;
+					} else if (board[row+i][col] == color) {
+						setScore += color;
+					} else if (board[row+i][col] == -color) {
+						setScore = 0;
+						break;
+					} else {
+						multiplyer = Math.max(multiplyer, row+i - this.getTopRowOfCol(board, col));
+					}
+				}
+				if (setScore == 4 || setScore == -4) {	// Found four in a row
+					return this.WIN_VALUE * color; 			// setScore = +/- 100
+				}
+				score += setScore;// * (6 - multiplyer);
+			}
+		}
+			
+				
+		// Diagonal up sets
+		for (var row = 0; row < 3; row++) {
+			for (var col = 0; col < 4; col++) {
+				
+				setScore = 0;
+				color = 0;
+				multiplyer = 0;
+				for (var i = 0; i < 4; i++) {
+					if (color == 0 && board[row+i][col+i] == 1) {
+						color = 1;
+						setScore++;
+					} else if (color == 0 && board[row+i][col+i] == -1) {
+						color = -1;
+						setScore--;
+					} else if (board[row+i][col+i] == color) {
+						setScore += color;
+					} else if (board[row+i][col+i] == -color) {
+						setScore = 0;
+						break;
+					} else {
+						multiplyer = Math.max(multiplyer, row+i - this.getTopRowOfCol(board, col+i));
+					}
+				}
+				if (setScore == 4 || setScore == -4) {	// Found four in a row
+					return this.WIN_VALUE * color; 			// setScore = +/- 1000
+				}
+				score += setScore;// * (6 - multiplyer);
+			}
+		}
+		
+		// Diagonal down sets
+		for (var row = 3; row < board.length; row++) {
+			for (var col = 0; col < 4; col++) {
+				
+				setScore = 0;
+				color = 0;
+				multiplyer = 0;
+				for (var i = 0; i < 4; i++) {
+					if (color == 0 && board[row-i][col+i] == 1) {
+						color = 1;
+						setScore++;
+					} else if (color == 0 && board[row-i][col+i] == -1) {
+						color = -1;
+						setScore--;
+					} else if (board[row-i][col+i] == color) {
+						setScore += color;
+					} else if (board[row-i][col+i] == -color) {
+						setScore = 0;
+						break;
+					} else {
+						multiplyer = Math.max(multiplyer, row-i - this.getTopRowOfCol(board, col+i));
+					}
+				}
+				if (setScore == 4 || setScore == -4) {	// Found four in a row
+					return this.WIN_VALUE * color; 			// setScore = +/- 100
+				}
+				score += setScore;// * (6 - multiplyer);
+			}
+		}
+		
+		return score;		
+	}
 
 
 

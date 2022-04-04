@@ -669,7 +669,13 @@ class Game
     {
 
         var myString = "";
-		myString += "DEPTH: " + (this.DEPTH+1) + "\n";
+        if (this.FIRST_MOVE) {
+            this.FIRST_MOVE = false;
+            myString += "OPENING" + "\n";
+        } else {
+            myString += "DEPTH: " + (this.DEPTH+1) + "\n";
+        }
+		
 		myString += "+-----+-----------+----------+" + "\n";
 		myString += "| col | heuristic | tiebreak |" + "\n";
 		myString += "+-----+-----------+----------+" + "\n";
@@ -729,8 +735,6 @@ class Game
         if (this.gameType == 0) {
             bestMove = -bestMove;
         }
-
-        bestMove *= 1.5;
 
         // Max bar is 160
         if (bestMove > 160) {
@@ -883,7 +887,31 @@ class Game
 
 
 
+    private openingMove() : Array<number>
+    {
+        if (this.gameType == 1) {
+            return [-2,-1,0,1,0,-1,-2]
+        }
 
+        var col = 0;
+        for (var i = 1; i < 7; i++) {
+            if (this.gameBoard[0][i] == -1) {
+                col = i;
+            }
+        }
+
+        // Openings from https://connect4.gamesolver.org
+        var openings =  [[-1,2,1,2,-1,1,-2],
+                        [-2,0,1,0,-2,-2,-3],
+                        [-2,-2,0,0,0,0,-3],
+                        [-4,-2,-2,-1,-2,-2,-4],
+                        [-3,0,0,0,0,-2,-2],
+                        [-3,-2,-2,0,1,0,-2],
+                        [-2,1,-1,2,1,2,-1]];
+
+        return openings[col];
+        
+    }
 
 
 
@@ -905,27 +933,31 @@ class Game
         var moves = new Array<number>();
         for (var i = 0; i < this.gameBoard.length; i++) {
             board.push(this.gameBoard[i].slice());
-            moves.push(i);
+            moves.push(0);
         }
-		moves.push(7);
+		moves.push(0);
         
 		
 		//Update search depth based on number of open cols
 		this.updateDEPTH(board);
 		
 		if (this.FIRST_MOVE) {
-			this.FIRST_MOVE = false;
-		}
-		
-		for (var i = 0; i < moves.length; i++) {
+            moves = this.openingMove();
+
+
+		} else {
+            for (var i = 0; i < moves.length; i++) {
 			
-			// Check if move is legal
-			if (board[5][i] == 0) {
-				moves[i] = this.minMaxAlgorithm(board, i, 1, this.DEPTH);
-			} else {
-				moves[i] = -this.MAX_VALUE;
-			}
-		}
+                // Check if move is legal
+                if (board[5][i] == 0) {
+                    moves[i] = this.minMaxAlgorithm(board, i, 1, this.DEPTH);
+                } else {
+                    moves[i] = -this.MAX_VALUE;
+                }
+            }
+        }
+		
+		
 		
 		var bestMove = this.indexOfBestMove(moves);
 		
@@ -1037,7 +1069,7 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
-				score += setScore * (6 - multiplyer);
+                score += setScore * Math.floor(Math.pow((6 - multiplyer), 1.5));
 			}
 		}
 		
@@ -1071,7 +1103,7 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
-				score += setScore * (6 - multiplyer);
+				score += setScore * Math.floor(Math.pow((6 - multiplyer), 1.5));
 			}
 		}
 			
@@ -1106,7 +1138,8 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
-				score += setScore * (6 - multiplyer);
+                
+                score += setScore * Math.floor(Math.pow((6 - multiplyer), 1.5));
 			}
 		}
 		
@@ -1140,7 +1173,9 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
-				score += setScore * (6 - multiplyer);
+                
+                score += setScore * Math.floor(Math.pow((6 - multiplyer), 1.5));
+				
 			}
 		}
 		

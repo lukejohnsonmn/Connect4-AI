@@ -22,7 +22,6 @@ class Game
     private gameOver: boolean;
     private isRedTurn: boolean;
     private isPlayerTurn: boolean;
-    private botThinking: boolean;
     private elapsedTime: number;
     private timer : number;
 
@@ -64,7 +63,6 @@ class Game
         this.gameOver = false;
         this.isRedTurn = true;
         this.isPlayerTurn = false;
-        this.botThinking = false;
         this.gameType = 0;
         this.elapsedTime = 0;
         this.timer = 0;
@@ -191,7 +189,7 @@ class Game
         this.consoleText.fillColor = new paper.Color("white");
         this.consoleText.visible = false;
         var myString = "";
-		myString += "DEPTH: " + this.DEPTH + "\n";
+		myString += "DEPTH: " + (this.DEPTH+1) + "\n";
 		myString += "+-----+-----------+----------+" + "\n";
 		myString += "| col | heuristic | tiebreak |" + "\n";
 		myString += "+-----+-----------+----------+" + "\n";
@@ -509,7 +507,17 @@ class Game
     }
 
     
+    private drawnGame() : void
+    {
+        this.gameOver = true;
+        this.winText!.content = "Draw!";
+        this.winText!.fillColor = new paper.Color("white");
+        this.winText!.bringToFront();
+        this.winText!.visible = true;
 
+        this.helpText!.content = "Click anywhere to play again!";
+        this.helpText!.visible = true;
+    }
     
 
     private checkWin() : number {
@@ -529,27 +537,27 @@ class Game
 
         var result = this.checkHorizontal(color);
         if (result > -1) {
-            console.log(result, " Horizontal ", color);
             this.drawWinArrow(result, 0, color);
             return color;
         }
         result = this.checkVertical(color);
         if (result > -1) {
-            console.log(result, " Vertical ", color);
             this.drawWinArrow(result, 1, color);
             return color;
         }
         result = this.checkDiagonalUp(color);
         if (result > -1) {
-            console.log(result, " Diagonal Up ", color);
             this.drawWinArrow(result, 2, color);
             return color;
         }
         result = this.checkDiagonalDown(color);
         if (result > -1) {
-            console.log(result, " Diagonal Down ", color);
             this.drawWinArrow(result, 3, color);
             return color;
+        }
+        if (this.countLegalMoves(this.gameBoard) == 0) {
+            this.drawnGame();
+            return 0;
         }
         return 0;
     }
@@ -625,7 +633,7 @@ class Game
     {
 
         var myString = "";
-		myString += "DEPTH: " + this.DEPTH + "\n";
+		myString += "DEPTH: " + (this.DEPTH+1) + "\n";
 		myString += "+-----+-----------+----------+" + "\n";
 		myString += "| col | heuristic | tiebreak |" + "\n";
 		myString += "+-----+-----------+----------+" + "\n";
@@ -779,14 +787,27 @@ class Game
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Thinking algorithm
     private think() : void
     {
         this.timer = 0;
         this.elapsedTime = 0;
         var startTime = new Date().getTime();
-        this.botThinking = true;
-        console.log("Thinking...");
 		
         // Deep copy of gameBoard.
         var board = new Array<Array<number>>();
@@ -820,10 +841,10 @@ class Game
 		
 		this.printHeuristics(moves, bestMove);
 		
-		// Play the best move. Will always be last line of think().
-        this.botThinking = false;
+		
         this.elapsedTime = new Date().getTime() - startTime;
-        console.log("time: ", this.elapsedTime);
+
+        // Play the best move. Will always be last line of think().
 		this.addPiece(bestMove);
     }
 
@@ -836,10 +857,6 @@ class Game
             newBoard[i] = board[i].slice();
         }
 
-
-            
-
-		
 		// Add requested move.
 		newBoard = this.pretendAddPiece(newBoard, col, color);
 		
@@ -919,12 +936,16 @@ class Game
 					} else if (board[row][col+i] == -color) {
 						setScore = 0;
 						break;
-					} else { // Extra points for highest empty row in set
+					}
+
+                    // Extra points multiplyer for highest empty row in set
+                    if (board[row][col+i] == 0) {
 						multiplyer = Math.max(multiplyer, row - this.getTopRowOfCol(board, col+i));
 					}
 				}
+
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
-					return this.WIN_VALUE * color; 			// setScore = +/- 100
+					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
 				score += setScore * (6 - multiplyer);
 			}
@@ -949,12 +970,16 @@ class Game
 					} else if (board[row+i][col] == -color) {
 						setScore = 0;
 						break;
-					} else {
+					}
+
+                    // Extra points multiplyer for highest empty row in set
+                    if (board[row+i][col] == 0) {
 						multiplyer = Math.max(multiplyer, row+i - this.getTopRowOfCol(board, col));
 					}
 				}
+
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
-					return this.WIN_VALUE * color; 			// setScore = +/- 100
+					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
 				score += setScore * (6 - multiplyer);
 			}
@@ -980,12 +1005,16 @@ class Game
 					} else if (board[row+i][col+i] == -color) {
 						setScore = 0;
 						break;
-					} else {
+					}
+
+                    // Extra points multiplyer for highest empty row in set
+                    if (board[row+i][col+i] == 0) {
 						multiplyer = Math.max(multiplyer, row+i - this.getTopRowOfCol(board, col+i));
 					}
 				}
+
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
-					return this.WIN_VALUE * color; 			// setScore = +/- 1000
+					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
 				score += setScore * (6 - multiplyer);
 			}
@@ -1010,12 +1039,16 @@ class Game
 					} else if (board[row-i][col+i] == -color) {
 						setScore = 0;
 						break;
-					} else {
-						multiplyer = Math.max(multiplyer, row-i - this.getTopRowOfCol(board, col+i));
 					}
+
+                    // Extra points multiplyer for highest empty row in set
+                    if (board[row-i][col+i] == 0) {
+                        multiplyer = Math.max(multiplyer, row-i - this.getTopRowOfCol(board, col+i));
+                    }
 				}
+
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
-					return this.WIN_VALUE * color; 			// setScore = +/- 100
+					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
 				score += setScore * (6 - multiplyer);
 			}

@@ -5,6 +5,7 @@
  */ 
 
 import * as paper from 'paper';
+import { PaperScope } from 'paper/dist/paper-core';
 
 class Game 
 {
@@ -30,6 +31,9 @@ class Game
     private WIN_VALUE: number;
     private TIEBREAK: boolean;
     private FIRST_MOVE: boolean;
+
+    private colorDark : string;
+    private colorGray : string;
     
 
     // TypeScript will throw an error if you define a type but don't initialize in the constructor
@@ -42,12 +46,24 @@ class Game
     private menuRedText : paper.PointText | undefined;
     private menuWhiteText : paper.PointText | undefined;
     private menuYellowText : paper.PointText | undefined;
+    private sideRedText : paper.PointText | undefined;
+    private sideYellowText : paper.PointText | undefined;
     private consoleText : paper.PointText | undefined;
     private menuHighlight : paper.Path | undefined;
     private evaluationBack : paper.Path | undefined;
     private evaluationYellow : paper.Path | undefined;
     private evaluationRed : paper.Path | undefined;
     private evaluationBar : paper.Path | undefined;
+    private sideBack : paper.Path | undefined;
+    private sideBackOutline : paper.Path | undefined;
+    private consoleBack : paper.Path | undefined;
+    private consoleBackOutline : paper.Path | undefined;
+    private titleBack : paper.Path | undefined;
+    private titleBackOutline : paper.Path | undefined;
+    private helpBack : paper.Path | undefined;
+    private helpBackOutline : paper.Path | undefined;
+    private menuBack : paper.Path | undefined;
+    private menuBackOutline : paper.Path | undefined;
 
 
     private gameBoard : Array<Array<number>>;
@@ -60,7 +76,7 @@ class Game
         this.height = 800;
         this.GAME_HEIGHT = 280;
         this.GAME_SHIFT_X = 0;
-        this.GAME_SHIFT_Y = -84;
+        this.GAME_SHIFT_Y = -90;
         this.coolDown = true;
         this.gameReady = false;
         this.gameStarted = false;
@@ -76,6 +92,9 @@ class Game
         this.WIN_VALUE = 1000;
         this.TIEBREAK = false;
         this.FIRST_MOVE = true;
+
+        this.colorDark = '#111111';
+        this.colorGray = '#808080';
 
         this.gameBoard =    [[0,0,0,0,0,0,0],
                             [0,0,0,0,0,0,0],
@@ -141,16 +160,15 @@ class Game
 
 
         // Setup display for win text
-        this.winText = new paper.PointText(new paper.Point(200, -15));
+        this.winText = new paper.PointText(new paper.Point(200, -73));
         this.winText.justification = "center";
         this.winText.fontSize = 80;
-        this.winText.fillColor = new paper.Color("red");
         this.winText!.content = "Connect 4!";
-        this.winText!.fillColor = new paper.Color("blue");
+        this.winText!.fillColor = new paper.Color("#1260cc");
         this.winText.addTo(this.game);
 
         // Setup display for help text
-        this.helpText = new paper.PointText(new paper.Point(200, 405));
+        this.helpText = new paper.PointText(new paper.Point(200, 440));
         this.helpText.justification = "center";
         this.helpText.fontSize = 30;
         this.helpText.fillColor = new paper.Color("gold");
@@ -185,15 +203,35 @@ class Game
         this.menuYellowText.content = "AI\n\nPlayer\n\nPlayer"
         this.menuYellowText.addTo(this.game);
 
+
+
+        // Setup display for side text
+        this.sideYellowText = new paper.PointText(new paper.Point(530, 228));
+        this.sideYellowText.justification = "center";
+        this.sideYellowText.fontSize = 30;
+        this.sideYellowText.fillColor = new paper.Color("yellow");
+        this.sideYellowText.visible = false;
+        this.sideYellowText.addTo(this.game);
+
+        // Setup display for side text
+        this.sideRedText = new paper.PointText(new paper.Point(530, 150));
+        this.sideRedText.justification = "center";
+        this.sideRedText.fontSize = 30;
+        this.sideRedText.fillColor = new paper.Color("red");
+        this.sideRedText.visible = false;
+        this.sideRedText.addTo(this.game);
+
+
+
         // Setup display for console text
-        this.consoleText = new paper.PointText(new paper.Point(-300, 50));
+        this.consoleText = new paper.PointText(new paper.Point(-320, 50));
         this.consoleText.fontFamily = "Consolas";
         this.consoleText.justification = "left";
         this.consoleText.fontSize = 16;
         this.consoleText.fillColor = new paper.Color("white");
         this.consoleText.visible = false;
         var myString = "";
-		myString += "DEPTH: " + (this.DEPTH+1) + "\n";
+		myString += "OPENING" + "\n";
 		myString += "+-----+-----------+----------+" + "\n";
 		myString += "| col | heuristic | tiebreak |" + "\n";
 		myString += "+-----+-----------+----------+" + "\n";
@@ -205,9 +243,11 @@ class Game
         this.consoleText.addTo(this.game);
 
 
+
+
         var rec1 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(250, 50));
         this.menuHighlight = new paper.Path.Rectangle(rec1);
-        this.menuHighlight.fillColor = new paper.Color('#111111');
+        this.menuHighlight.fillColor = new paper.Color('#222222');
         this.menuHighlight.position.x = 520;
         this.menuHighlight.position.y = 90;
         this.menuHighlight.addTo(this.game!);
@@ -218,7 +258,7 @@ class Game
         this.evaluationYellow = new paper.Path.Rectangle(rec2);
         this.evaluationYellow.fillColor = new paper.Color('#404000');
         this.evaluationYellow.position.x = 450;
-        this.evaluationYellow.position.y = 95;
+        this.evaluationYellow.position.y = 255;
         this.evaluationYellow.addTo(this.game!);
         this.evaluationYellow.sendToBack();
         this.evaluationYellow.visible = false;
@@ -227,14 +267,14 @@ class Game
         this.evaluationRed = new paper.Path.Rectangle(rec2);
         this.evaluationRed.fillColor = new paper.Color('#400000');
         this.evaluationRed.position.x = 450;
-        this.evaluationRed.position.y = 255;
+        this.evaluationRed.position.y = 95;
         this.evaluationRed.addTo(this.game!);
         this.evaluationRed.sendToBack();
         this.evaluationRed.visible = false;
 
         var rec3 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(30, 330));
         this.evaluationBack = new paper.Path.Rectangle(rec3);
-        this.evaluationBack.fillColor = new paper.Color('#111111');
+        this.evaluationBack.fillColor = new paper.Color(this.colorGray);
         this.evaluationBack.position.x = 450;
         this.evaluationBack.position.y = 175;
         this.evaluationBack.addTo(this.game!);
@@ -244,6 +284,101 @@ class Game
         var rec4 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(20, 0));
         this.evaluationBar = new paper.Path.Rectangle(rec4);
         this.evaluationBar.visible = false;
+
+        
+
+        var rec5 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(145, 360));
+        this.sideBack = new paper.Path.Rectangle(rec5);
+        this.sideBack.fillColor = new paper.Color(this.colorDark);
+        this.sideBack.position.x = 525;
+        this.sideBack.position.y = 175;
+        this.sideBack.addTo(this.game!);
+        this.sideBack.sendToBack();
+        this.sideBack.visible = false;
+
+        var rec6 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(155, 370));
+        this.sideBackOutline = new paper.Path.Rectangle(rec6);
+        this.sideBackOutline.fillColor = new paper.Color(this.colorGray);
+        this.sideBackOutline.position.x = 525;
+        this.sideBackOutline.position.y = 175;
+        this.sideBackOutline.addTo(this.game!);
+        this.sideBackOutline.sendToBack();
+        this.sideBackOutline.visible = false;
+
+
+
+        var rec7 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(300, 270));
+        this.consoleBack = new paper.Path.Rectangle(rec7);
+        this.consoleBack.fillColor = new paper.Color(this.colorDark);
+        this.consoleBack.position.x = -188;
+        this.consoleBack.position.y = 150;
+        this.consoleBack.addTo(this.game!);
+        this.consoleBack.sendToBack();
+        this.consoleBack.visible = false;
+
+        var rec8 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(310, 280));
+        this.consoleBackOutline = new paper.Path.Rectangle(rec8);
+        this.consoleBackOutline.fillColor = new paper.Color(this.colorGray);
+        this.consoleBackOutline.position.x = -188;
+        this.consoleBackOutline.position.y = 150;
+        this.consoleBackOutline.addTo(this.game!);
+        this.consoleBackOutline.sendToBack();
+        this.consoleBackOutline.visible = false;
+
+        var rec9 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(440, 100));
+        this.titleBack = new paper.Path.Rectangle(rec9);
+        this.titleBack.fillColor = new paper.Color(this.colorDark);
+        this.titleBack.position.x = 200;
+        this.titleBack.position.y = -100;
+        this.titleBack.addTo(this.game!);
+        this.titleBack.sendToBack();
+        this.titleBack.visible = true;
+
+        var rec10 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(450, 110));
+        this.titleBackOutline = new paper.Path.Rectangle(rec10);
+        this.titleBackOutline.fillColor = new paper.Color(this.colorGray);
+        this.titleBackOutline.position.x = 200;
+        this.titleBackOutline.position.y = -100;
+        this.titleBackOutline.addTo(this.game!);
+        this.titleBackOutline.sendToBack();
+        this.titleBackOutline.visible = true;
+
+        var rec11 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(440, 100));
+        this.helpBack = new paper.Path.Rectangle(rec11);
+        this.helpBack.fillColor = new paper.Color(this.colorDark);
+        this.helpBack.position.x = 200;
+        this.helpBack.position.y = 450;
+        this.helpBack.addTo(this.game!);
+        this.helpBack.sendToBack();
+        this.helpBack.visible = true;
+
+        var rec12 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(450, 110));
+        this.helpBackOutline = new paper.Path.Rectangle(rec12);
+        this.helpBackOutline.fillColor = new paper.Color(this.colorGray);
+        this.helpBackOutline.position.x = 200;
+        this.helpBackOutline.position.y = 450;
+        this.helpBackOutline.addTo(this.game!);
+        this.helpBackOutline.sendToBack();
+        this.helpBackOutline.visible = true;
+
+        var rec13 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(440, 340));
+        this.menuBack = new paper.Path.Rectangle(rec13);
+        this.menuBack.fillColor = new paper.Color(this.colorDark);
+        this.menuBack.position.x = 200;
+        this.menuBack.position.y = 175;
+        this.menuBack.addTo(this.game!);
+        this.menuBack.sendToBack();
+        this.menuBack.visible = true;
+
+        var rec14 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(450, 350));
+        this.menuBackOutline = new paper.Path.Rectangle(rec14);
+        this.menuBackOutline.fillColor = new paper.Color(this.colorGray);
+        this.menuBackOutline.position.x = 200;
+        this.menuBackOutline.position.y = 175;
+        this.menuBackOutline.addTo(this.game!);
+        this.menuBackOutline.sendToBack();
+        this.menuBackOutline.visible = true;
+        
         
 
         //this.displayBoard!.visible = true;
@@ -261,6 +396,35 @@ class Game
     {
         if (this.timer >= this.elapsedTime) {
             if (this.gameStarted) {
+
+                // Help text
+                if (!this.gameOver && this.isPlayerTurn) {
+                    if (this.gameType == 2) {
+                        if (this.isRedTurn) {
+                            this.helpText!.content = "Player 1 turn";
+                            this.helpText!.fillColor = new paper.Color('red');
+                        } else {
+                            this.helpText!.content = "Player 2 turn";
+                            this.helpText!.fillColor = new paper.Color('yellow');
+                        }
+                    } else {
+                        this.helpText!.content = "Player turn";
+                        if (this.gameType == 0) {
+                            this.helpText!.fillColor = new paper.Color('red');
+                        } else {
+                            this.helpText!.fillColor = new paper.Color('yellow');
+                        }
+                    }
+                } else if (!this.gameOver) {
+                    this.helpText!.content = "Analyzing...";
+                    if (this.gameType == 0) {
+                        this.helpText!.fillColor = new paper.Color('yellow');
+                    } else {
+                        this.helpText!.fillColor = new paper.Color('red');
+                    }
+                }
+
+                // Game handling
                 if (this.coolDown) {
                     if (this.GAME_HEIGHT - this.game!.firstChild.data.row * 49 > this.game!.firstChild.position.y) {
                         this.game!.firstChild.data.vel += event.delta * 2000;
@@ -272,8 +436,15 @@ class Game
     
                             this.coolDown = false;
                             if (!this.isPlayerTurn && !this.gameOver) { //&& !this.botThinking) {
+                                
                                 this.think();
+                                
                             }
+
+                            /* pvp evaluation
+                            if (!this.gameOver && this.gameType == 2) {
+                                this.think();
+                            }*/
                         } 
                     }
                 }
@@ -317,21 +488,27 @@ class Game
             if (x > 470 && x < 720 && y > 200 && y < 250) {
                 this.menuHighlight!.position.x = 200;
                 this.menuHighlight!.position.y = 90;
-                this.menuHighlight!.sendToBack();
                 this.menuHighlight!.visible = true;
             } else if (x > 470 && x < 720 && y > 275 && y < 325) {
                 this.menuHighlight!.position.x = 200;
                 this.menuHighlight!.position.y = 162;
-                this.menuHighlight!.sendToBack();
                 this.menuHighlight!.visible = true;
             } else if (x > 470 && x < 720 && y > 350 && y < 400) {
                 this.menuHighlight!.position.x = 200;
                 this.menuHighlight!.position.y = 234;
-                this.menuHighlight!.sendToBack();
                 this.menuHighlight!.visible = true;
             } else {
                 this.menuHighlight!.visible = false;
             }
+        }
+        
+        if (!this.coolDown) {
+            if (x > 380 && x < 820 && y > -15 && y < 85) {
+                this.titleBack!.fillColor = new paper.Color('#222222');
+            } else {
+                this.titleBack!.fillColor = new paper.Color('#111111');
+            }
+            
         }
     }
 
@@ -369,7 +546,11 @@ class Game
             }
         } else if (this.gameOver && !this.coolDown) {
             this.reset();
-        }   
+        }
+        
+        if (x > 380 && x < 820 && y > -15 && y < 85) {
+            this.reset();
+        }
     }
 
 
@@ -389,22 +570,52 @@ class Game
     private startGame(type : number) : void
     {
         this.gameReady = true;
-        this.helpText!.visible = false;
+
+        if (type == 0) {
+            this.sideRedText!.content = "Player";
+            this.sideYellowText!.content = "AI";
+            this.helpText!.fillColor = new paper.Color('red');
+            this.helpText!.content = "Player turn";
+        } else if (type == 1) {
+            this.sideRedText!.content = "AI";
+            this.sideYellowText!.content = "Player";
+            this.helpText!.fillColor = new paper.Color('red');
+            this.helpText!.content = "Analyzing...";
+        } else {
+            this.sideRedText!.content = "Player 1";
+            this.sideYellowText!.content = "Player 2";
+            this.helpText!.fillColor = new paper.Color('red');
+            this.helpText!.content = "Player 1 turn";
+        }
+
+        this.helpText!.position.y = 448;
+
+        
+        
         this.menuRedText!.visible = false;
         this.menuWhiteText!.visible = false;
         this.menuYellowText!.visible = false;
         this.menuHighlight!.visible = false;
+        this.menuBack!.visible = false;
+        this.menuBackOutline!.visible = false;
+
+        this.sideRedText!.visible = true;
+        this.sideYellowText!.visible = true;
         this.evaluationBack!.visible = true;
         this.evaluationYellow!.visible = true;
         this.evaluationRed!.visible = true;
+        this.sideBack!.visible = true;
+        this.sideBackOutline!.visible = true;
+        
+        
 
         if (type < 2) {
             this.consoleText!.visible = true;
+            this.consoleBack!.visible = true;
+            this.consoleBackOutline!.visible = true;
         }
         //this.winText!.visible = false;
-        if (type == 0) {
-            this.isPlayerTurn = true;
-        } else if (type == 1) {
+        if (type == 1) {
             this.isPlayerTurn = false;
         } else {
             this.isPlayerTurn = true;
@@ -537,6 +748,7 @@ class Game
         this.winText!.bringToFront();
         this.winText!.visible = true;
 
+        this.helpText!.fillColor = new paper.Color("gold");
         this.helpText!.content = "Click anywhere to play again!";
         this.helpText!.visible = true;
         
@@ -551,6 +763,7 @@ class Game
         this.winText!.bringToFront();
         this.winText!.visible = true;
 
+        this.helpText!.fillColor = new paper.Color("gold");
         this.helpText!.content = "Click anywhere to play again!";
         this.helpText!.visible = true;
     }
@@ -736,6 +949,14 @@ class Game
             bestMove = -bestMove;
         }
 
+        if (bestMove >= 1000) {
+            this.evaluationBack!.fillColor = new paper.Color('red');
+        } else if (bestMove <= -1000) {
+            this.evaluationBack!.fillColor = new paper.Color('yellow');
+        } else {
+            this.evaluationBack!.fillColor = new paper.Color(this.colorGray);
+        }
+
         // Max bar is 160
         if (bestMove > 160) {
             bestMove = 160;
@@ -749,15 +970,15 @@ class Game
         this.evaluationBar = new paper.Path.Rectangle(rec);
 
         if (bestMove > 0) {
-            this.evaluationBar.fillColor = new paper.Color('#ff0000');
+            this.evaluationBar.fillColor = new paper.Color('red');
         } else if (bestMove < 0) {
-            this.evaluationBar.fillColor = new paper.Color('#ffff00');
+            this.evaluationBar.fillColor = new paper.Color('yellow');
         } else {
             this.evaluationBar.visible = false;
             return;
         }
         this.evaluationBar.position.x = 450;
-        this.evaluationBar.position.y = 175 + bestMove/2;
+        this.evaluationBar.position.y = 175 - bestMove/2;
         this.evaluationBar.addTo(this.game!);
         
         this.evaluationBar!.visible = true;
@@ -927,6 +1148,8 @@ class Game
         this.timer = 0;
         this.elapsedTime = 0;
         var startTime = new Date().getTime();
+
+        
 		
         // Deep copy of gameBoard.
         var board = new Array<Array<number>>();
@@ -967,7 +1190,8 @@ class Game
         this.elapsedTime = new Date().getTime() - startTime;
 
         // Play the best move. Will always be last line of think().
-		this.addPiece(bestMove);
+        this.addPiece(bestMove);
+		
     }
 
 

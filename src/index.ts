@@ -43,6 +43,7 @@ class Game
     private menuRedText : paper.PointText | undefined;
     private menuWhiteText : paper.PointText | undefined;
     private menuYellowText : paper.PointText | undefined;
+    private consoleText : paper.PointText | undefined;
     private menuHighlight : paper.Path | undefined;
 
 
@@ -68,7 +69,7 @@ class Game
         this.elapsedTime = 0;
         this.timer = 0;
 
-        this.DEPTH = 7;
+        this.DEPTH = 4;
         this.MAX_VALUE = 10000000;
         this.WIN_VALUE = 1000;
         this.TIEBREAK = false;
@@ -182,6 +183,25 @@ class Game
         this.menuYellowText.content = "AI\n\nPlayer\n\nPlayer"
         this.menuYellowText.addTo(this.game);
 
+        // Setup display for console text
+        this.consoleText = new paper.PointText(new paper.Point(-300, 50));
+        this.consoleText.fontFamily = "Consolas";
+        this.consoleText.justification = "left";
+        this.consoleText.fontSize = 16;
+        this.consoleText.fillColor = new paper.Color("white");
+        this.consoleText.visible = false;
+        var myString = "";
+		myString += "DEPTH: " + this.DEPTH + "\n";
+		myString += "+-----+-----------+----------+" + "\n";
+		myString += "| col | heuristic | tiebreak |" + "\n";
+		myString += "+-----+-----------+----------+" + "\n";
+        for (var i = 0; i < 7; i++) {
+            myString += "|     |           |          |" + "\n";
+        }
+        myString += "+-----+-----------+----------+"
+        this.consoleText.content = myString;
+        this.consoleText.addTo(this.game);
+
 
         var rec = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(250, 50));
         this.menuHighlight = new paper.Path.Rectangle(rec);
@@ -199,6 +219,131 @@ class Game
         this.coolDown = false;
     }
 
+    private reset() : void
+    {
+        window.location.reload();
+    }
+
+    // This method will be called once per frame
+    private update(event: GameEvent) : void
+    {
+        if (this.timer >= this.elapsedTime) {
+            if (this.gameStarted) {
+                if (this.coolDown) {
+                    if (this.GAME_HEIGHT - this.game!.firstChild.data.row * 49 > this.game!.firstChild.position.y) {
+                        this.game!.firstChild.data.vel += event.delta * 2000;
+                        this.game!.firstChild.position.y += this.game!.firstChild.data.vel * event.delta;
+                    } else {
+                        this.game!.firstChild.position.y = this.GAME_HEIGHT - this.game!.firstChild.data.row * 49;
+                        if (this.coolDown) {
+                            this.checkWin();
+    
+                            this.coolDown = false;
+                            if (!this.isPlayerTurn && !this.gameOver) { //&& !this.botThinking) {
+                                this.think();
+                            }
+                        } 
+                    }
+                }
+    
+            }
+        
+        // Account for time lost from think() algorithm
+        } else {
+            this.timer += event.delta * 1000;
+        }
+        
+        
+    }
+
+    // This handles dynamic resizing of the browser window
+    // You do not need to modify this function
+    private resize() : void
+    {
+        var aspectRatio = this.width / this.height;
+        var newAspectRatio = paper.view.viewSize.width / paper.view.viewSize.height;
+        if(newAspectRatio > aspectRatio)
+            paper.view.zoom = paper.view.viewSize.width  / this.width;    
+        else
+            paper.view.zoom = paper.view.viewSize.height / this.height;
+        
+        paper.view.center = new paper.Point(this.width / 2, this.height / 2);
+        
+    }
+
+    private onMouseMove(event: paper.MouseEvent) : void
+    {
+        // Get the vector from the center of the screen to the mouse position
+        var mouseVector = event.point.subtract(paper.view.center);
+
+        // Point the game towards the mouse cursor by converting the vector to an angle
+        // This only works if applyMatrix is set to false
+        //this.game!.rotation = mouseVector.angle + 90;
+        var x = event.point.x + this.GAME_SHIFT_X;
+        var y = event.point.y + this.GAME_SHIFT_Y;
+        if (!this.gameReady && !this.coolDown) {
+            if (x > 470 && x < 720 && y > 200 && y < 250) {
+                this.menuHighlight!.position.x = 200;
+                this.menuHighlight!.position.y = 90;
+                this.menuHighlight!.sendToBack();
+                this.menuHighlight!.visible = true;
+            } else if (x > 470 && x < 720 && y > 275 && y < 325) {
+                this.menuHighlight!.position.x = 200;
+                this.menuHighlight!.position.y = 162;
+                this.menuHighlight!.sendToBack();
+                this.menuHighlight!.visible = true;
+            } else if (x > 470 && x < 720 && y > 350 && y < 400) {
+                this.menuHighlight!.position.x = 200;
+                this.menuHighlight!.position.y = 234;
+                this.menuHighlight!.sendToBack();
+                this.menuHighlight!.visible = true;
+            } else {
+                this.menuHighlight!.visible = false;
+            }
+        }
+    }
+
+    private onMouseDown(event: paper.MouseEvent) : void
+    {
+        var mouseVector = event.point.subtract(paper.view.center);
+
+        var x = event.point.x + this.GAME_SHIFT_X;
+        var y = event.point.y + this.GAME_SHIFT_Y;
+        if (!this.gameReady) {
+            if (x > 470 && x < 720 && y > 200 && y < 250) {
+                this.startGame(0);
+            } else if (x > 470 && x < 720 && y > 275 && y < 325) {
+                this.startGame(1);
+            } else if (x > 470 && x < 720 && y > 350 && y < 400) {
+                this.startGame(2);
+            }
+        } else if (!this.gameOver && !this.coolDown && this.isPlayerTurn) {
+            if (event.point.y > 175 && event.point.y < 600) {
+                if (x > 425 && x < 474) {
+                    this.addPiece(0);
+                } else if (x > 474 && x < 523) {
+                    this.addPiece(1);
+                } else if (x > 523 && x < 572) {
+                    this.addPiece(2);
+                } else if (x > 572 && x < 621) {
+                    this.addPiece(3);
+                } else if (x > 621 && x < 670) {
+                    this.addPiece(4);
+                } else if (x > 670 && x < 719) {
+                    this.addPiece(5);
+                } else if (x > 719 && x < 768) {
+                    this.addPiece(6);
+                }
+            }
+        } else if (this.gameOver && !this.coolDown) {
+            this.reset();
+        }   
+    }
+
+
+
+
+
     private displayBoard() : void
     {
         for (var i=0; i < this.game!.children.length; i++) {
@@ -209,10 +354,7 @@ class Game
     }
 
 
-    private reset() : void
-    {
-        window.location.reload();
-    }
+
 
     private startGame(type : number) : void
     {
@@ -222,6 +364,9 @@ class Game
         this.menuWhiteText!.visible = false;
         this.menuYellowText!.visible = false;
         this.menuHighlight!.visible = false;
+        if (type < 2) {
+            this.consoleText!.visible = true;
+        }
         //this.winText!.visible = false;
         if (type == 0) {
             this.isPlayerTurn = true;
@@ -365,121 +510,7 @@ class Game
 
     
 
-    // This method will be called once per frame
-    private update(event: GameEvent) : void
-    {
-        if (this.timer >= this.elapsedTime) {
-            if (this.gameStarted) {
-                if (this.coolDown) {
-                    if (this.GAME_HEIGHT - this.game!.firstChild.data.row * 49 > this.game!.firstChild.position.y) {
-                        this.game!.firstChild.data.vel += event.delta * 2000;
-                        this.game!.firstChild.position.y += this.game!.firstChild.data.vel * event.delta;
-                    } else {
-                        this.game!.firstChild.position.y = this.GAME_HEIGHT - this.game!.firstChild.data.row * 49;
-                        if (this.coolDown) {
-                            this.checkWin();
     
-                            this.coolDown = false;
-                            if (!this.isPlayerTurn && !this.gameOver) { //&& !this.botThinking) {
-                                this.think();
-                            }
-                        } 
-                    }
-                }
-    
-            }
-        
-        // Account for time lost from think() algorithm
-        } else {
-            this.timer += event.delta * 1000;
-        }
-        
-        
-    }
-
-    // This handles dynamic resizing of the browser window
-    // You do not need to modify this function
-    private resize() : void
-    {
-        var aspectRatio = this.width / this.height;
-        var newAspectRatio = paper.view.viewSize.width / paper.view.viewSize.height;
-        if(newAspectRatio > aspectRatio)
-            paper.view.zoom = paper.view.viewSize.width  / this.width;    
-        else
-            paper.view.zoom = paper.view.viewSize.height / this.height;
-        
-        paper.view.center = new paper.Point(this.width / 2, this.height / 2);
-        
-    }
-
-    private onMouseMove(event: paper.MouseEvent) : void
-    {
-        // Get the vector from the center of the screen to the mouse position
-        var mouseVector = event.point.subtract(paper.view.center);
-
-        // Point the game towards the mouse cursor by converting the vector to an angle
-        // This only works if applyMatrix is set to false
-        //this.game!.rotation = mouseVector.angle + 90;
-        var x = event.point.x + this.GAME_SHIFT_X;
-        var y = event.point.y + this.GAME_SHIFT_Y;
-        if (!this.gameReady && !this.coolDown) {
-            if (x > 470 && x < 720 && y > 200 && y < 250) {
-                this.menuHighlight!.position.x = 200;
-                this.menuHighlight!.position.y = 90;
-                this.menuHighlight!.sendToBack();
-                this.menuHighlight!.visible = true;
-            } else if (x > 470 && x < 720 && y > 275 && y < 325) {
-                this.menuHighlight!.position.x = 200;
-                this.menuHighlight!.position.y = 162;
-                this.menuHighlight!.sendToBack();
-                this.menuHighlight!.visible = true;
-            } else if (x > 470 && x < 720 && y > 350 && y < 400) {
-                this.menuHighlight!.position.x = 200;
-                this.menuHighlight!.position.y = 234;
-                this.menuHighlight!.sendToBack();
-                this.menuHighlight!.visible = true;
-            } else {
-                this.menuHighlight!.visible = false;
-            }
-        }
-    }
-
-    private onMouseDown(event: paper.MouseEvent) : void
-    {
-        var mouseVector = event.point.subtract(paper.view.center);
-
-        var x = event.point.x + this.GAME_SHIFT_X;
-        var y = event.point.y + this.GAME_SHIFT_Y;
-        if (!this.gameReady) {
-            if (x > 470 && x < 720 && y > 200 && y < 250) {
-                this.startGame(0);
-            } else if (x > 470 && x < 720 && y > 275 && y < 325) {
-                this.startGame(1);
-            } else if (x > 470 && x < 720 && y > 350 && y < 400) {
-                this.startGame(2);
-            }
-        } else if (!this.gameOver && !this.coolDown && this.isPlayerTurn) {
-            if (event.point.y > 175 && event.point.y < 600) {
-                if (x > 425 && x < 474) {
-                    this.addPiece(0);
-                } else if (x > 474 && x < 523) {
-                    this.addPiece(1);
-                } else if (x > 523 && x < 572) {
-                    this.addPiece(2);
-                } else if (x > 572 && x < 621) {
-                    this.addPiece(3);
-                } else if (x > 621 && x < 670) {
-                    this.addPiece(4);
-                } else if (x > 670 && x < 719) {
-                    this.addPiece(5);
-                } else if (x > 719 && x < 768) {
-                    this.addPiece(6);
-                }
-            }
-        } else if (this.gameOver && !this.coolDown) {
-            this.reset();
-        }   
-    }
 
     private checkWin() : number {
 
@@ -600,36 +631,50 @@ class Game
 		myString += "+-----+-----------+----------+" + "\n";
 		
 		for (var i = 0; i < moves.length; i++) {
+
+            // | col
 			if (i == bestMove) {
 				myString += "| *" + (i+1);
 			} else {
 				myString += "|  " + (i+1);
 			}
 			
+            // col |
 			if (moves[i] < 0) {
 				myString += "  | " + moves[i];
 			} else {
 				myString += "  |  " + moves[i];
 			}
+
+            // heuristic |
+            if (Math.abs(moves[i]) <= 9) {              // abs(x) <= 9
+                myString += "        | ";
+            } else if (Math.abs(moves[i]) <= 99) {      // abs(x) <= 99
+                myString += "       | ";
+            } else if (Math.abs(moves[i]) <= 999) {     // abs(x) <= 999
+                myString += "      | ";
+            } else if (Math.abs(moves[i]) <= 9999) {    // abs(x) <= 9999
+                myString += "     | ";
+            } else {                                    // abs(x) >= 10000
+                myString += " | ";
+            }
 			
+            // tiebreak |
 			if (this.TIEBREAK && moves[i] == moves[bestMove]) {
-                if (moves[i] <= -this.WIN_VALUE || moves[i] >= this.WIN_VALUE) {
-                    myString += "\t  | " + this.spaceValue(i) + "\t     |";
-                } else {
-                    myString += "\t\t  | " + this.spaceValue(i) + "\t     |";
+                var value = this.spaceValue(i);
+                if (value <= 9) {           // value <= 9
+                    myString += value + "        |"
+                } else {                    // value >= 10
+                    myString += value + "       |"
                 }
-			} else if (moves[i] <= -this.MAX_VALUE) {
-				myString += " |\t\t     |";
-			} else if (moves[i] <= -this.WIN_VALUE || moves[i] >= this.WIN_VALUE) {
-				myString += "\t  |\t\t     |";
-			} else {
-				myString += "\t\t  |\t\t     |";
-			}
+            } else {
+                myString += "         |";
+            }
+
 			myString += "\n";
 		}
 		myString += "+-----+-----------+----------+" + "\n";
-
-        console.log(myString);
+        this.consoleText!.content = myString;
 	}
 
 
@@ -874,14 +919,14 @@ class Game
 					} else if (board[row][col+i] == -color) {
 						setScore = 0;
 						break;
-					} else { // Extra povars for highest empty row in set
+					} else { // Extra points for highest empty row in set
 						multiplyer = Math.max(multiplyer, row - this.getTopRowOfCol(board, col+i));
 					}
 				}
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 			// setScore = +/- 100
 				}
-				score += setScore;// * (6 - multiplyer);
+				score += setScore * (6 - multiplyer);
 			}
 		}
 		
@@ -911,7 +956,7 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 			// setScore = +/- 100
 				}
-				score += setScore;// * (6 - multiplyer);
+				score += setScore * (6 - multiplyer);
 			}
 		}
 			
@@ -942,7 +987,7 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 			// setScore = +/- 1000
 				}
-				score += setScore;// * (6 - multiplyer);
+				score += setScore * (6 - multiplyer);
 			}
 		}
 		
@@ -972,7 +1017,7 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 			// setScore = +/- 100
 				}
-				score += setScore;// * (6 - multiplyer);
+				score += setScore * (6 - multiplyer);
 			}
 		}
 		

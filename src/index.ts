@@ -44,6 +44,10 @@ class Game
     private menuYellowText : paper.PointText | undefined;
     private consoleText : paper.PointText | undefined;
     private menuHighlight : paper.Path | undefined;
+    private evaluationBack : paper.Path | undefined;
+    private evaluationYellow : paper.Path | undefined;
+    private evaluationRed : paper.Path | undefined;
+    private evaluationBar : paper.Path | undefined;
 
 
     private gameBoard : Array<Array<number>>;
@@ -201,15 +205,45 @@ class Game
         this.consoleText.addTo(this.game);
 
 
-        var rec = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(250, 50));
-        this.menuHighlight = new paper.Path.Rectangle(rec);
+        var rec1 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(250, 50));
+        this.menuHighlight = new paper.Path.Rectangle(rec1);
         this.menuHighlight.fillColor = new paper.Color('#111111');
         this.menuHighlight.position.x = 520;
         this.menuHighlight.position.y = 90;
-        
         this.menuHighlight.addTo(this.game!);
         this.menuHighlight.sendToBack();
         this.menuHighlight.visible = false;
+
+        var rec2 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(20, 160));
+        this.evaluationYellow = new paper.Path.Rectangle(rec2);
+        this.evaluationYellow.fillColor = new paper.Color('#404000');
+        this.evaluationYellow.position.x = 450;
+        this.evaluationYellow.position.y = 95;
+        this.evaluationYellow.addTo(this.game!);
+        this.evaluationYellow.sendToBack();
+        this.evaluationYellow.visible = false;
+
+        var rec2 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(20, 160));
+        this.evaluationRed = new paper.Path.Rectangle(rec2);
+        this.evaluationRed.fillColor = new paper.Color('#400000');
+        this.evaluationRed.position.x = 450;
+        this.evaluationRed.position.y = 255;
+        this.evaluationRed.addTo(this.game!);
+        this.evaluationRed.sendToBack();
+        this.evaluationRed.visible = false;
+
+        var rec3 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(30, 330));
+        this.evaluationBack = new paper.Path.Rectangle(rec3);
+        this.evaluationBack.fillColor = new paper.Color('#111111');
+        this.evaluationBack.position.x = 450;
+        this.evaluationBack.position.y = 175;
+        this.evaluationBack.addTo(this.game!);
+        this.evaluationBack.sendToBack();
+        this.evaluationBack.visible = false;
+
+        var rec4 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(20, 0));
+        this.evaluationBar = new paper.Path.Rectangle(rec4);
+        this.evaluationBar.visible = false;
         
 
         //this.displayBoard!.visible = true;
@@ -352,8 +386,6 @@ class Game
     }
 
 
-
-
     private startGame(type : number) : void
     {
         this.gameReady = true;
@@ -362,6 +394,10 @@ class Game
         this.menuWhiteText!.visible = false;
         this.menuYellowText!.visible = false;
         this.menuHighlight!.visible = false;
+        this.evaluationBack!.visible = true;
+        this.evaluationYellow!.visible = true;
+        this.evaluationRed!.visible = true;
+
         if (type < 2) {
             this.consoleText!.visible = true;
         }
@@ -683,7 +719,45 @@ class Game
 		}
 		myString += "+-----+-----------+----------+" + "\n";
         this.consoleText!.content = myString;
+        this.updateEvalutationBar(moves[bestMove]);
 	}
+
+    private updateEvalutationBar(bestMove : number) : void
+    {
+
+        // Flip for yellow display
+        if (this.gameType == 0) {
+            bestMove = -bestMove;
+        }
+
+        bestMove *= 1.5;
+
+        // Max bar is 160
+        if (bestMove > 160) {
+            bestMove = 160;
+        } else if (bestMove < -160) {
+            bestMove = -160;
+        }
+
+        this.evaluationBar!.remove();
+
+        var rec = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(20, bestMove));
+        this.evaluationBar = new paper.Path.Rectangle(rec);
+
+        if (bestMove > 0) {
+            this.evaluationBar.fillColor = new paper.Color('#ff0000');
+        } else if (bestMove < 0) {
+            this.evaluationBar.fillColor = new paper.Color('#ffff00');
+        } else {
+            this.evaluationBar.visible = false;
+            return;
+        }
+        this.evaluationBar.position.x = 450;
+        this.evaluationBar.position.y = 175 + bestMove/2;
+        this.evaluationBar.addTo(this.game!);
+        
+        this.evaluationBar!.visible = true;
+    }
 
 
     // Calculate space values for each candidate best move
@@ -768,21 +842,38 @@ class Game
     // Update the depth of thinking as the number of open cols reduce
 	private updateDEPTH(board : Array<Array<number>>) : void {
 		var numOpenCols = this.countLegalMoves(board);
-		if (numOpenCols == 7)
-			this.DEPTH = 8;
-		else if (numOpenCols == 6)
-			this.DEPTH = 9;
-		else if (numOpenCols == 5)
-			this.DEPTH = 10;
-		else if (numOpenCols == 4)
-			this.DEPTH = 11;
-		else if (numOpenCols == 3)
-			this.DEPTH = 14;
-		else if (numOpenCols == 2)
-			this.DEPTH = 12;
-		else if (numOpenCols == 1)
-			this.DEPTH = 6;
-		this.DEPTH -= 2;
+        if (this.gameType == 0) {
+            if (numOpenCols == 7)
+                this.DEPTH = 6;
+            else if (numOpenCols == 6)
+                this.DEPTH = 6;
+            else if (numOpenCols == 5)
+                this.DEPTH = 8;
+            else if (numOpenCols == 4)
+                this.DEPTH = 10;
+            else if (numOpenCols == 3)
+                this.DEPTH = 12;
+            else if (numOpenCols == 2)
+                this.DEPTH = 10;
+            else if (numOpenCols == 1)
+                this.DEPTH = 4;
+        } else {
+            if (numOpenCols == 7)
+                this.DEPTH = 5;
+            else if (numOpenCols == 6)
+                this.DEPTH = 7;
+            else if (numOpenCols == 5)
+                this.DEPTH = 7;
+            else if (numOpenCols == 4)
+                this.DEPTH = 9;
+            else if (numOpenCols == 3)
+                this.DEPTH = 11;
+            else if (numOpenCols == 2)
+                this.DEPTH = 11;
+            else if (numOpenCols == 1)
+                this.DEPTH = 5;
+        }
+		
 	}
 
 
@@ -824,7 +915,6 @@ class Game
 		
 		if (this.FIRST_MOVE) {
 			this.FIRST_MOVE = false;
-			this.DEPTH = 4;
 		}
 		
 		for (var i = 0; i < moves.length; i++) {

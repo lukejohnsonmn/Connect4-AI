@@ -5,7 +5,7 @@
  */ 
 
 import * as paper from 'paper';
-import { PaperScope } from 'paper/dist/paper-core';
+import { Color, Layer, PaperScope } from 'paper/dist/paper-core';
 
 class Game 
 {
@@ -50,6 +50,7 @@ class Game
     private sideYellowText : paper.PointText | undefined;
     private consoleText : paper.PointText | undefined;
     private menuHighlight : paper.Path | undefined;
+    private moveHighlight : paper.Path | undefined;
     private evaluationBack : paper.Path | undefined;
     private evaluationYellow : paper.Path | undefined;
     private evaluationRed : paper.Path | undefined;
@@ -245,14 +246,23 @@ class Game
 
 
 
-        var rec1 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(250, 50));
-        this.menuHighlight = new paper.Path.Rectangle(rec1);
+        var rec0 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(250, 50));
+        this.menuHighlight = new paper.Path.Rectangle(rec0);
         this.menuHighlight.fillColor = new paper.Color('#222222');
         this.menuHighlight.position.x = 520;
         this.menuHighlight.position.y = 90;
         this.menuHighlight.addTo(this.game!);
         this.menuHighlight.sendToBack();
         this.menuHighlight.visible = false;
+
+        var rec1 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(49, 300));
+        this.moveHighlight = new paper.Path.Rectangle(rec1);
+        this.moveHighlight.fillColor = new paper.Color('#222222');
+        this.moveHighlight.position.x = 49;
+        this.moveHighlight.position.y = 155;
+        this.moveHighlight.addTo(this.game!);
+        this.moveHighlight.sendToBack();
+        this.moveHighlight.visible = false;
 
         var rec2 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(20, 160));
         this.evaluationYellow = new paper.Path.Rectangle(rec2);
@@ -500,6 +510,43 @@ class Game
             } else {
                 this.menuHighlight!.visible = false;
             }
+        } else if (this.gameReady && !this.coolDown) {
+            if (event.point.y > 175 && event.point.y < 600) {
+                this.moveHighlight!.sendToBack();
+                if (this.isPlayerTurn && this.isRedTurn) {
+                    this.moveHighlight!.fillColor = new paper.Color('#400000');
+                } else if (this.isPlayerTurn && !this.isRedTurn) {
+                    this.moveHighlight!.fillColor = new paper.Color('#404000');
+                } else {
+                    this.moveHighlight!.fillColor = new paper.Color('#222222');
+                }
+                if (x > 425 && x < 474) {
+                    this.moveHighlight!.position.x = 49;
+                    this.moveHighlight!.visible = true;
+                } else if (x > 474 && x < 523) {
+                    this.moveHighlight!.position.x = 98;
+                    this.moveHighlight!.visible = true;
+                } else if (x > 523 && x < 572) {
+                    this.moveHighlight!.position.x = 147;
+                    this.moveHighlight!.visible = true;
+                } else if (x > 572 && x < 621) {
+                    this.moveHighlight!.position.x = 196;
+                    this.moveHighlight!.visible = true;
+                } else if (x > 621 && x < 670) {
+                    this.moveHighlight!.position.x = 245;
+                    this.moveHighlight!.visible = true;
+                } else if (x > 670 && x < 719) {
+                    this.moveHighlight!.position.x = 294;
+                    this.moveHighlight!.visible = true;
+                } else if (x > 719 && x < 768) {
+                    this.moveHighlight!.position.x = 343;
+                    this.moveHighlight!.visible = true;
+                } else {
+                    this.moveHighlight!.visible = false;
+                }
+            } else {
+                this.moveHighlight!.visible = false;
+            }
         }
         
         if (!this.coolDown) {
@@ -528,6 +575,7 @@ class Game
             }
         } else if (!this.gameOver && !this.coolDown && this.isPlayerTurn) {
             if (event.point.y > 175 && event.point.y < 600) {
+                this.moveHighlight!.visible = false;
                 if (x > 425 && x < 474) {
                     this.addPiece(0);
                 } else if (x > 474 && x < 523) {
@@ -1079,9 +1127,9 @@ class Game
             else if (numOpenCols == 3)
                 this.DEPTH = 12;
             else if (numOpenCols == 2)
-                this.DEPTH = 10;
+                this.DEPTH = 12;
             else if (numOpenCols == 1)
-                this.DEPTH = 4;
+                this.DEPTH = 6;
         } else {
             if (numOpenCols == 7)
                 this.DEPTH = 5;
@@ -1098,6 +1146,21 @@ class Game
             else if (numOpenCols == 1)
                 this.DEPTH = 5;
         }
+
+        if (numOpenCols == 7)
+                this.DEPTH = 6;
+            else if (numOpenCols == 6)
+                this.DEPTH = 7;
+            else if (numOpenCols == 5)
+                this.DEPTH = 8;
+            else if (numOpenCols == 4)
+                this.DEPTH = 9;
+            else if (numOpenCols == 3)
+                this.DEPTH = 12;
+            else if (numOpenCols == 2)
+                this.DEPTH = 12;
+            else if (numOpenCols == 1)
+                this.DEPTH = 7;
 		
 	}
 
@@ -1405,12 +1468,6 @@ class Game
 		
 		return score;		
 	}
-
-
-
-
-
-    
 }
 
 

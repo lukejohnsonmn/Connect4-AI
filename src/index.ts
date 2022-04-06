@@ -25,8 +25,11 @@ class Game
     private isPlayerTurn: boolean;
     private elapsedTime: number;
     private timer : number;
+    private heuristicCalls : number;
+    private turnNum: number;
 
     private DEPTH: number;
+    private MAX_SEARCHES : number;
     private MAX_VALUE: number;
     private WIN_VALUE: number;
     private TIEBREAK: boolean;
@@ -87,8 +90,11 @@ class Game
         this.gameType = 0;
         this.elapsedTime = 0;
         this.timer = 0;
-
-        this.DEPTH = 4;
+        this.heuristicCalls = 0;
+        this.turnNum = 0
+        
+        this.DEPTH = 6;
+        this.MAX_SEARCHES = 2000000;
         this.MAX_VALUE = 10000000;
         this.WIN_VALUE = 1000;
         this.TIEBREAK = false;
@@ -687,6 +693,7 @@ class Game
     private addPiece(col : number) : boolean
     {
         this.coolDown = true;
+        this.turnNum++;
 
         if (!this.gameStarted) {
             this.gameStarted = true;
@@ -934,7 +941,15 @@ class Game
             this.FIRST_MOVE = false;
             myString += "OPENING" + "\n";
         } else {
-            myString += "DEPTH: " + (this.DEPTH+1) + "\n";
+            myString += "DEPTH: " + (this.DEPTH+1) + "\n";// + ", " + this.heuristicCalls + " outcomes analyzed" + "\n";
+            if (this.heuristicCalls > 1) {
+                myString += "ANALYZED: " + this.heuristicCalls + " positions\n";
+            } else {
+                myString += "ANALYZED: " + this.heuristicCalls + " position\n";
+            }
+            console.log("----------------------Actual:", this.heuristicCalls);
+            
+            //myString += "POSITIONS ANALYZED: " + this.heuristicCalls + "\n";
         }
 		
 		myString += "+-----+-----------+----------+" + "\n";
@@ -1111,57 +1126,71 @@ class Game
     }
 
 
+    // Estimates the number of searches for a given depth on the current game board
+    private projectedSearches(depth : number, cols : number) : number
+    {
+        // distance from top (rows)
+        // each index (i) represents height
+        // (0 = only the top row of column is empty)
+        // (5 = col is completely open)
+        // each value (v) represents # of columns at height (i)
+        //      height = [0,1,2,3,4,5]
+        var colHeights = [0,0,0,0,0,0];
+        for (var c = 0; c < 7; c++) {
+            var topRow = this.getTopRowOfCol(this.gameBoard, c);
+            if (topRow > -1) {
+                colHeights[5-topRow]++;
+            }
+        }   
+
+        // Begin math
+
+        depth++;
+        var baseValue = Math.pow(cols, depth);
+        var newValue = Math.pow(cols, depth);
+        for (var h = 0; h < colHeights.length; h++) {
+            newValue -= (baseValue - (baseValue * Math.pow(.7, colHeights[h])) ) * (Math.pow(.4,h));
+        }
+        if (cols == 6) {
+            return newValue * 5/6;
+        } else if (cols == 5) {
+            return newValue * 1/2;
+        } else if (cols == 4) {
+            return newValue * 1/42;
+        } else if (cols == 3) {
+            return newValue * 1/100
+        }
+        return newValue;
+    }
+
 
     // Update the depth of thinking as the number of open cols reduce
 	private updateDEPTH(board : Array<Array<number>>) : void {
 		var numOpenCols = this.countLegalMoves(board);
-        if (this.gameType == 0) {
-            if (numOpenCols == 7)
-                this.DEPTH = 6;
-            else if (numOpenCols == 6)
-                this.DEPTH = 6;
-            else if (numOpenCols == 5)
-                this.DEPTH = 8;
-            else if (numOpenCols == 4)
-                this.DEPTH = 10;
-            else if (numOpenCols == 3)
-                this.DEPTH = 12;
-            else if (numOpenCols == 2)
-                this.DEPTH = 12;
-            else if (numOpenCols == 1)
-                this.DEPTH = 6;
+
+        
+        //console.log("numOpenCols:", numOpenCols, " DEPTH:", this.DEPTH+1, " prevheuristicCalls:", this.heuristicCalls);
+        if (numOpenCols == 1) {
+            this.DEPTH = 7;
+        } else if (numOpenCols == 2) {
+            this.DEPTH = 13;
         } else {
-            if (numOpenCols == 7)
-                this.DEPTH = 5;
-            else if (numOpenCols == 6)
-                this.DEPTH = 7;
-            else if (numOpenCols == 5)
-                this.DEPTH = 7;
-            else if (numOpenCols == 4)
-                this.DEPTH = 9;
-            else if (numOpenCols == 3)
-                this.DEPTH = 11;
-            else if (numOpenCols == 2)
-                this.DEPTH = 11;
-            else if (numOpenCols == 1)
-                this.DEPTH = 5;
+            
+            // Increase DEPTH until projectedSearches exceeds MAX_SEARCHES
+            while (this.projectedSearches(this.DEPTH, numOpenCols) < this.MAX_SEARCHES) {
+                this.DEPTH++;
+            }
+            this.DEPTH--;
         }
 
-        if (numOpenCols == 7)
-                this.DEPTH = 6;
-            else if (numOpenCols == 6)
-                this.DEPTH = 7;
-            else if (numOpenCols == 5)
-                this.DEPTH = 8;
-            else if (numOpenCols == 4)
-                this.DEPTH = 9;
-            else if (numOpenCols == 3)
-                this.DEPTH = 12;
-            else if (numOpenCols == 2)
-                this.DEPTH = 12;
-            else if (numOpenCols == 1)
-                this.DEPTH = 7;
-		
+        // Keep depth with num of remaining moves
+        if (this.DEPTH > 41 - this.turnNum) {
+            this.DEPTH = 41 - this.turnNum;
+            //console.log("turnNum:", this.turnNum, " DEPTH:", this.DEPTH+1,);
+        }
+
+        this.heuristicCalls = 0;
+        //console.log("(result) DEPTH:", this.DEPTH+1,);
 	}
 
 
@@ -1170,13 +1199,14 @@ class Game
 
 
 
-
+    // Openings from https://connect4.gamesolver.org
     private openingMove() : Array<number>
     {
         if (this.gameType == 1) {
             return [-2,-1,0,1,0,-1,-2]
         }
 
+        // Get col of first played move by player
         var col = 0;
         for (var i = 1; i < 7; i++) {
             if (this.gameBoard[0][i] == -1) {
@@ -1184,7 +1214,7 @@ class Game
             }
         }
 
-        // Openings from https://connect4.gamesolver.org
+        
         var openings =  [[-1,2,1,2,-1,1,-2],
                         [-2,0,1,0,-2,-2,-3],
                         [-2,-2,0,0,0,0,-3],
@@ -1211,7 +1241,7 @@ class Game
         this.timer = 0;
         this.elapsedTime = 0;
         var startTime = new Date().getTime();
-
+        
         
 		
         // Deep copy of gameBoard.
@@ -1224,14 +1254,17 @@ class Game
 		moves.push(0);
         
 		
-		//Update search depth based on number of open cols
-		this.updateDEPTH(board);
+		
+        //this.DEPTH = 6;
 		
 		if (this.FIRST_MOVE) {
             moves = this.openingMove();
 
 
 		} else {
+            //Update search depth based on number of open cols
+            this.updateDEPTH(board);
+
             for (var i = 0; i < moves.length; i++) {
 			
                 // Check if move is legal
@@ -1249,7 +1282,6 @@ class Game
 		
 		this.printHeuristics(moves, bestMove);
 		
-		
         this.elapsedTime = new Date().getTime() - startTime;
 
         // Play the best move. Will always be last line of think().
@@ -1260,6 +1292,8 @@ class Game
 
     private minMaxAlgorithm(board : Array<Array<number>>, col : number, color : number, depth : number) : number {
 		
+        
+
 		// Deep copy of board.
         var newBoard = new Array<Array<number>>();
         for (var i = 0; i < board.length; i++) {
@@ -1272,6 +1306,7 @@ class Game
 		// Base case for end of searching
 		// Return heuristic analysis of board
 		if (depth <= 0) {
+            this.heuristicCalls++;
 			return this.heuristic(newBoard);
 		}
 		
@@ -1303,6 +1338,7 @@ class Game
 		
 		// No playable moves found, so return (draw)
 		if (noLegalMoves) {
+            //this.heuristicCalls--; // 2nd call on same position, so reset heuristicCalls
 			return this.heuristic(newBoard);
 		}
 		
@@ -1320,7 +1356,9 @@ class Game
 
 
 
-    private heuristic(board : Array<Array<number>>) : number{
+    private heuristic(board : Array<Array<number>>) : number
+    {
+        
 		var score = 0;
 		var setScore = 0; // Value of a set of 4
 		var color = 0;

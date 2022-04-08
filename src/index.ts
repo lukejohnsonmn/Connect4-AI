@@ -26,7 +26,7 @@ class Game
     private elapsedTime: number;
     private timer : number;
     private searchedLeafNodes : number;
-    private prunedLeafNodes: number;
+    private projectedLeafNodes : number;
     private turnNum: number;
     private difficulty: number; // 0: beginner, 1: easy, 2: medium, 3: hard, 4: expert
     
@@ -72,6 +72,7 @@ class Game
     private helpBackOutline : paper.Path | undefined;
     private menuBack : paper.Path | undefined;
     private menuBackOutline : paper.Path | undefined;
+    
 
 
     private gameBoard : Array<Array<number>>;
@@ -95,11 +96,11 @@ class Game
         this.elapsedTime = 0;
         this.timer = 0;
         this.searchedLeafNodes = 1;
-        this.prunedLeafNodes = 0;
+        this.projectedLeafNodes = 1;
         this.turnNum = 0;
         this.difficulty = 0;
         
-        this.DEPTH = 7;
+        this.DEPTH = 1;
         this.MAX_SEARCHES = 2000000;
         this.MAX_VALUE = 10000000;
         this.WIN_VALUE = 1000;
@@ -469,7 +470,6 @@ class Game
                             if (!this.isPlayerTurn && !this.gameOver) { //&& !this.botThinking) {
                                 
                                 this.think();
-                                
                             }
 
                             /* pvp evaluation
@@ -952,7 +952,6 @@ class Game
     // Print formatting for heuristic values at each col
 	private printHeuristics(moves : Array<number>, bestMove : number) : void
     {
-        this.updateEvalutationBar(moves[bestMove]);
         var myString = "";
         if (this.FIRST_MOVE) {
             this.FIRST_MOVE = false;
@@ -1017,7 +1016,7 @@ class Game
 		}
 		myString += "+-----+-----------+----------+" + "\n";
         this.consoleText!.content = myString;
-        
+        //this.updateEvalutationBar(moves[bestMove]);
 	}
 
     private updateEvalutationBar(bestMove : number) : void
@@ -1028,9 +1027,10 @@ class Game
         var depth = this.DEPTH;
         if (this.turnNum % 2 != depth % 2) {
             depth--;
-            //bestMove = this.barThink(depth);
+            bestMove = this.barThink(depth);
+        } else {
+            bestMove = this.barThink(depth);
         }
-        //console.log(bestMove);
 
         if (this.turnNum >= 2) {
             this.evaluationText!.content = "DEPTH: " + depth;
@@ -1179,34 +1179,24 @@ class Game
     }
 
     // Update the depth of thinking based on predicted number of moves
-	private updateDEPTH(board : Array<Array<number>>) : void {
+	private updateDEPTH() : void {
 
         // difficulty 0 always uses depth 1
         if (this.difficulty > 0) {
-
-            // Use data to set this.DEPTH
-            if (42 - this.turnNum <= 7 || this.countLegalMoves(board) == 2) {
-                this.DEPTH = 42 - this.turnNum;
-            } else if (this.countLegalMoves(board) == 3) {
+            if (this.countLegalMoves(this.gameBoard) <= 3) {
                 this.DEPTH = this.get3ColDepth();
-
-
-            // Otherwise, estimate searches using projectedSearches() algorithm
             } else {
                 var curr = this.projectedSearches(this.DEPTH);
                 var next = this.projectedSearches(this.DEPTH+1);
                 while (next < this.MAX_SEARCHES && next > curr) {
                     this.DEPTH++;
                     curr = next;
-                    next = this.projectedSearches(this.DEPTH);
+                    next = this.projectedSearches(this.DEPTH+1);
                 }
-            }
-        }
+                this.projectedLeafNodes = curr;
+            } 
+        }   
         this.searchedLeafNodes = 0;
-        this.prunedLeafNodes = 0;
-        
-
-        
 	}
 
 
@@ -1251,15 +1241,13 @@ class Game
 
 
 
-    // Thinking algorithm
+    // Setup calls to minMaxSearch(), find best move and publish to gameBoard
     private think() : void
     {
         this.timer = 0;
         this.elapsedTime = 0;
         var startTime = new Date().getTime();
-        
-        
-		
+
         // Deep copy of gameBoard.
         var board = new Array<Array<number>>();
         var moves = new Array<number>();
@@ -1269,32 +1257,32 @@ class Game
         }
 		moves.push(0);
         
-		
+		// Use pre-defined opening moves for first move
 		if (this.FIRST_MOVE) {
             moves = this.openingMove();
+        } else {
 
+            //Update search depth based on projected searches
+            this.updateDEPTH();
 
-		} else {
-            //Update search depth based on number of open cols
-            this.updateDEPTH(board);
-            for (var i = 0; i < moves.length; i++) {
+            // Catches lag causing projectedLeafNodes to exceed MAX_SEARCHES
+            if (this.projectedLeafNodes > this.MAX_SEARCHES) {
+                this.DEPTH--;
+            }
+
+            for (var col = 0; col < moves.length; col++) {
 			
                 // Check if move is legal
-                if (board[5][i] == 0) {
-                    moves[i] = this.minMaxAlgorithm(board, i, 1, this.DEPTH-1, -this.MAX_VALUE);
+                if (board[5][col] == 0) {
+                    moves[col] = this.minMaxSearch(board, col, 1, this.DEPTH-1, -this.MAX_VALUE);
                 } else {
-                    moves[i] = -this.MAX_VALUE;
+                    moves[col] = -this.MAX_VALUE;
                 }
             }
         }
-		
-		
-		
+
 		var bestMove = this.indexOfBestMove(moves);
-		
 		this.printHeuristics(moves, bestMove);
-        console.log("Searched:", this.searchedLeafNodes, "Pruned:", this.prunedLeafNodes);
-		
         this.elapsedTime = new Date().getTime() - startTime;
 
         // Play the best move. Will always be last line of think().
@@ -1303,35 +1291,33 @@ class Game
     }
 
 
-    private minMaxAlgorithm(board : Array<Array<number>>, col : number, color : number, depth : number, beta : number) : number {
+    private minMaxSearch(board : Array<Array<number>>, col : number, color : number, depth : number, beta : number) : number {
 
-		// Deep copy of board.
+		// Deep copy of board
         var newBoard = new Array<Array<number>>();
         for (var i = 0; i < board.length; i++) {
             newBoard[i] = board[i].slice();
         }
 
-		// Add requested move.
+		// Add requested move to board
 		newBoard = this.pretendAddPiece(newBoard, col, color);
 		
-		// Base case for end of searching
-		// Return heuristic analysis of board
+		// Base case, return heuristic analysis of board
 		if (depth <= 0) {
             this.searchedLeafNodes++;
 			return this.heuristic(newBoard);
 		}
 		
-		// Found a win, return and do not continue searching
+		// Found a win, return win value
 		if (this.heuristic(newBoard) == this.WIN_VALUE * color) {
-            this.prunedLeafNodes += Math.pow(this.countLegalMoves(board), depth); // estimated leaf nodes pruned
 			return this.WIN_VALUE * color;
 		}
 		
-		// Find value of strongest response for opponent
-		// Initially set to worst possible response
+		// Strongest response, initially set to worst possible response
 		var alpha = color * this.MAX_VALUE;
 		
-		var noLegalMoves = true;
+        // Iterate through all columns
+        var noLegalMoves = true;
 		for (col = 0; col < 7; col++) {
 			
 			// Check if move is legal
@@ -1339,24 +1325,22 @@ class Game
                 noLegalMoves = false;
 
 				if (color == 1) { // Minimizing player
-					alpha = Math.min(alpha, this.minMaxAlgorithm(newBoard, col, color * -1, depth-1, alpha));
+					alpha = Math.min(alpha, this.minMaxSearch(newBoard, col, color * -1, depth-1, alpha));
                     if (alpha <= beta) { // alpha-beta pruning
-                        this.prunedLeafNodes += Math.pow(this.countLegalMoves(board), depth); // estimated leaf nodes pruned
                         return alpha;
                     }
                 }
 
 				else { // Maximizing player       
-					alpha = Math.max(alpha, this.minMaxAlgorithm(newBoard, col, color * -1, depth-1, alpha));
+					alpha = Math.max(alpha, this.minMaxSearch(newBoard, col, color * -1, depth-1, alpha));
                     if (alpha >= beta) { // alpha-beta pruning
-                        this.prunedLeafNodes += Math.pow(this.countLegalMoves(board), depth); // estimated leaf nodes pruned
                         return alpha;
                     }
 				}
 			}
 		}
 		
-		// No playable moves found, so return 0 (draw)
+		// No playable moves found, return 0 (draw)
 		if (noLegalMoves) {
             this.searchedLeafNodes++;
 			return 0;
@@ -1374,8 +1358,12 @@ class Game
 
 
 
-
-
+    // Evaluates a given board based on algorithm listed below
+    // - Divides board into all possible subsets of 4's (horizontally, vertically, diagonally up, diagonally down)
+    // - Subsets that consist of only one color (+1 or -1) and empty spaces are worth one point per color in set
+    // - Subsets with conflicting colors (both colors present in subset) are worth 0 points
+    // - The lower the subsets highest empty space is, the more value the subset is worth
+    // - Subsets with values of +/- 4 are worth MAX_VALUE +/- 1000
     private heuristic(board : Array<Array<number>>) : number
     {
         
@@ -1483,7 +1471,6 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
-                
                 score += setScore * Math.floor(Math.pow((6 - multiplyer), 1.5));
 			}
 		}
@@ -1518,12 +1505,10 @@ class Game
 				if (setScore == 4 || setScore == -4) {	// Found four in a row
 					return this.WIN_VALUE * color; 		// setScore = +/- 1000
 				}
-                
                 score += setScore * Math.floor(Math.pow((6 - multiplyer), 1.5));
 				
 			}
 		}
-		
 		return score;		
 	}
 
@@ -1537,33 +1522,45 @@ class Game
         this.timer = 0;
         this.elapsedTime = 0;
         var startTime = new Date().getTime();
-        // Deep copy of gameBoard.
-        var board = new Array<Array<number>>();
-        var moves = new Array<number>();
-        for (var i = 0; i < this.gameBoard.length; i++) {
-            board.push(this.gameBoard[i].slice());
-            moves.push(0);
-        }
-		moves.push(0);
 
-		if (this.FIRST_MOVE) {
-            moves = this.openingMove();
-		} else {
-            //Update search depth based on number of open cols
-            //this.updateDEPTH(board);
-            var prune = this.MAX_VALUE;
-            for (var i = 0; i < moves.length; i++) {
-                // Check if move is legal
-                if (board[5][i] == 0) {
-                    moves[i] = this.minMaxAlgorithm(board, i, 1, depth-1, prune);
+        var color = 1;
+        // Manually set colors if pvp
+        if (this.gameType == 2 && this.turnNum % 2 == 1) {
+            color = -1;
+        }
+
+        var alpha = -color * this.MAX_VALUE;
+        
+        // If opening, get evaluation from opening data
+		if (this.turnNum < 2) {
+            var moves = this.openingMove();
+            for (var col = 0; col < 7; col++) {
+                if (color == 1) {
+                    alpha = Math.max(alpha, moves[col]);
                 } else {
-                    moves[i] = -this.MAX_VALUE;
+                    alpha = Math.min(alpha, moves[col]);
+                }
+                
+            }   
+            
+		} else {
+            var alpha = -color * this.MAX_VALUE;
+            for (var col = 0; col < 7; col++) {
+                // Check if move is legal
+                if (this.gameBoard[5][col] == 0) {
+                    if (color == 1) { // Maximizing player
+                        alpha = Math.max(alpha, this.minMaxSearch(this.gameBoard, col, color, depth-1, alpha));
+                    }
+    
+                    else { // Minimizing player       
+                        alpha = Math.min(alpha, this.minMaxSearch(this.gameBoard, col, color, depth-1, alpha));
+                    }
                 }
             }
         }
-		var bestMove = this.indexOfBestMove(moves);
+        console.log(alpha);
         this.elapsedTime = new Date().getTime() - startTime;
-		return bestMove;
+		return alpha;
     }
 
 
@@ -1584,19 +1581,22 @@ class Game
                     [0,0,0,0,0,0,0]];
         
         
+        // if 3 cols or less, do not take into account lowest wins
+        if (this.countLegalMoves(this.gameBoard) > 3) {
+            var arr = this.getLowestWins(this.gameBoard);
+            for (var row = 0; row < 6; row++) {
+                for (var col = 0; col < 7; col++) {
+                    board[row][col] = Math.abs(this.gameBoard[row][col]);
 
-        var arr = this.getLowestWins(this.gameBoard);
-        for (var row = 0; row < 6; row++) {
-            for (var col = 0; col < 7; col++) {
-                board[row][col] = Math.abs(this.gameBoard[row][col]);
-
-                // Set (flipped) rows under a win in a col to '1's
-                // (since those branches wont be explored, block off searches)
-                if (row < 6 - arr[col]) {
-                    board[row][col] = 1;
+                    // Set rows above a win in a col to '1's
+                    // (since those branches wont be explored, block off searches)
+                    if (row < 6 - arr[col]) {
+                        board[row][col] = 1;
+                    }
                 }
             }
         }
+        
 
         // Board state represented, now call recursive counting algorithm.
         var count = 0;
@@ -1604,7 +1604,8 @@ class Game
             count += this.countOutcomes(board, col, depth-1);
         }
         
-        return count;
+        // After alpha-beta pruning, reduce count by 7^(7-difficulty*2) 2: 7^3, 3: 7^1, 4: 7^-1
+        return count * Math.pow(7, 7-this.difficulty*2);
     }
 
     private countOutcomes(board : Array<Array<number>>, col : number, depth : number) : number

@@ -28,10 +28,10 @@ class Game
     private searchedLeafNodes : number;
     private turnNum: number;
     private difficulty: number; // 0: beginner, 1: easy, 2: medium, 3: hard, 4: expert
+    private isHoldingSlider: boolean;
     
 
     private DEPTH: number;
-    private MAX_SEARCHES : number;
     private MAX_VALUE: number;
     private WIN_VALUE: number;
     private TIEBREAK: boolean;
@@ -51,6 +51,8 @@ class Game
     private menuRedText : paper.PointText | undefined;
     private menuWhiteText : paper.PointText | undefined;
     private menuYellowText : paper.PointText | undefined;
+    private menuBarText : paper.PointText | undefined;
+    private menuBarTitleText : paper.PointText | undefined;
     private sideRedText : paper.PointText | undefined;
     private sideYellowText : paper.PointText | undefined;
     private evaluationText : paper.PointText | undefined;
@@ -66,6 +68,8 @@ class Game
     private titleBack : paper.Path | undefined;
     private helpBack : paper.Path | undefined;
     private menuBack : paper.Path | undefined;
+    private menuBar : paper.Path | undefined;
+    private slider : paper.Path | undefined;
     
 
 
@@ -78,7 +82,7 @@ class Game
         this.width = 1200;
         this.height = 800;
         this.GAME_HEIGHT = 280;
-        this.GAME_SHIFT_X = 0;
+        this.GAME_SHIFT_X = -150;
         this.GAME_SHIFT_Y = -90;
         this.coolDown = true;
         this.gameReady = false;
@@ -91,10 +95,10 @@ class Game
         this.timer = 0;
         this.searchedLeafNodes = 1;
         this.turnNum = 0;
-        this.difficulty = 0;
+        this.difficulty = 2;
+        this.isHoldingSlider = false;
         
         this.DEPTH = 1;
-        this.MAX_SEARCHES = 2000000;
         this.MAX_VALUE = 10000000;
         this.WIN_VALUE = 1000;
         this.TIEBREAK = false;
@@ -127,6 +131,7 @@ class Game
         paper.view.onResize = () => {this.resize();};
         paper.view.onMouseMove = (event: paper.MouseEvent) => {this.onMouseMove(event);};
         paper.view.onMouseDown = (event: paper.MouseEvent) => {this.onMouseDown(event);};
+        paper.view.onMouseUp = (event: paper.MouseEvent) => {this.onMouseUp(event);};
         paper.view.onFrame = (event: GameEvent) => {this.update(event);};
 
     }
@@ -171,7 +176,7 @@ class Game
         this.winText.justification = "center";
         this.winText.fontSize = 80;
         this.winText!.content = "Connect 4!";
-        this.winText!.fillColor = new paper.Color("#1260cc");
+        this.winText!.fillColor = new paper.Color('#1260cc');
         this.winText.addTo(this.game);
 
         // Setup display for help text
@@ -209,6 +214,26 @@ class Game
         this.menuYellowText.visible = true;
         this.menuYellowText.content = "AI\n\nPlayer\n\nPlayer"
         this.menuYellowText.addTo(this.game);
+
+        // Setup display for menu bar text
+        this.menuBarTitleText = new paper.PointText(new paper.Point(-50, 20));
+        this.menuBarTitleText.fontFamily = "Consolas";
+        this.menuBarTitleText.justification = "right";
+        this.menuBarTitleText.fontSize = 24;
+        this.menuBarTitleText.fillColor = new paper.Color("#1260cc");
+        this.menuBarTitleText.visible = true;
+        this.menuBarTitleText.content = "Difficulty     Depth"
+        this.menuBarTitleText.addTo(this.game);
+
+        // Setup display for menu bar text
+        this.menuBarText = new paper.PointText(new paper.Point(-60, 7));
+        this.menuBarText.fontFamily = "Consolas";
+        this.menuBarText.justification = "right";
+        this.menuBarText.fontSize = 16;
+        this.menuBarText.fillColor = new paper.Color("white");
+        this.menuBarText.visible = true;
+        this.menuBarText.content = "\n\n\nBEGINNER         NONE  \n\n\nEASY         LOW   \n\n\nMEDIUM         MEDIUM\n\n\nHARD         HIGH  \n\n\nEXPERT         MAX   "
+        this.menuBarText.addTo(this.game);
 
 
 
@@ -366,6 +391,26 @@ class Game
         this.menuBack.addTo(this.game!);
         this.menuBack.sendToBack();
         this.menuBack.visible = true;
+
+        var rec14 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(10, 300));
+        this.menuBar = new paper.Path.Rectangle(rec14);
+        this.menuBar.fillColor = new paper.Color(this.colorDark);
+        this.menuBar.strokeColor = new paper.Color(this.colorGray);
+        this.menuBar.strokeWidth = 3;
+        this.menuBar.position.x = -150;
+        this.menuBar.position.y = 175;
+        this.menuBar.addTo(this.game!);
+        this.menuBar.sendToBack();
+        this.menuBar.visible = true;
+        
+        this.slider = new paper.Path.Circle(new paper.Point(-150, 175), 15);
+        this.slider.fillColor = new paper.Color('#ffffff');
+        this.slider.strokeColor = new paper.Color('#bbbbbb');
+        this.slider.strokeWidth = 3;
+        this.slider.position.x = -150;
+        this.slider.position.y = 175;
+        this.slider.addTo(this.game!);
+        this.slider.visible = true;
         
         
 
@@ -470,6 +515,8 @@ class Game
         var x = event.point.x + this.GAME_SHIFT_X;
         var y = event.point.y + this.GAME_SHIFT_Y;
         if (!this.gameReady && !this.coolDown) {
+
+            // Menu functionality
             if (x > 470 && x < 720 && y > 200 && y < 250) {
                 this.menuHighlight!.position.x = 200;
                 this.menuHighlight!.position.y = 90;
@@ -485,6 +532,23 @@ class Game
             } else {
                 this.menuHighlight!.visible = false;
             }
+
+            // Slider functionality
+            if (this.isHoldingSlider) {
+                if (y < 219) {
+                    this.slider!.position.y = 59;
+                } else if (y >= 219 && y < 279) {
+                    this.slider!.position.y = 117;
+                } else if (y >= 279 && y < 337) {
+                    this.slider!.position.y = 175;
+                } else if (y >= 337 && y < 397) {
+                    this.slider!.position.y = 233;
+                } else if (y >= 397) {
+                    this.slider!.position.y = 291;
+                }
+            }
+
+
         } else if (this.gameReady && !this.coolDown) {
             if (event.point.y > 175 && event.point.y < 600) {
                 this.moveHighlight!.sendToBack();
@@ -548,6 +612,15 @@ class Game
             } else if (x > 470 && x < 720 && y > 350 && y < 400) {
                 this.startGame(2);
             }
+
+            if (!this.isHoldingSlider && Math.abs(245 - x) < 20 && Math.abs(this.slider!.position.y + 133 - y) < 20) {
+                this.isHoldingSlider = true;
+                
+            }
+
+            
+
+            
         } else if (!this.gameOver && !this.coolDown && this.isPlayerTurn) {
             if (event.point.y > 175 && event.point.y < 600) {
                 this.moveHighlight!.visible = false;
@@ -574,6 +647,39 @@ class Game
         if (x > 380 && x < 820 && y > -15 && y < 85) {
             this.reset();
         }
+    }
+
+    private onMouseUp(event: paper.MouseEvent) : void
+    {
+        var mouseVector = event.point.subtract(paper.view.center);
+
+        var x = event.point.x + this.GAME_SHIFT_X;
+        var y = event.point.y + this.GAME_SHIFT_Y;
+
+        if (!this.gameReady) {
+
+            // Slider functionality
+            if (this.isHoldingSlider) {
+                this.isHoldingSlider = false;
+                if (y < 219) {
+                    this.slider!.position.y = 59;
+                    this.difficulty = 0;
+                } else if (y >= 219 && y < 279) {
+                    this.slider!.position.y = 117;
+                    this.difficulty = 1;
+                } else if (y >= 279 && y < 337) {
+                    this.slider!.position.y = 175;
+                    this.difficulty = 2;
+                } else if (y >= 337 && y < 397) {
+                    this.slider!.position.y = 233;
+                    this.difficulty = 3;
+                } else if (y >= 397) {
+                    this.slider!.position.y = 291;
+                    this.difficulty = 4;
+                }
+            }
+        }
+        
     }
 
 
@@ -611,7 +717,6 @@ class Game
             this.helpText!.content = "Player 1 turn";
         }
 
-        this.difficulty = 4;
         this.helpText!.position.y = 448;
 
         
@@ -621,6 +726,10 @@ class Game
         this.menuYellowText!.visible = false;
         this.menuHighlight!.visible = false;
         this.menuBack!.visible = false;
+        this.menuBarText!.visible = false;
+        this.menuBarTitleText!.visible = false;
+        this.menuBar!.visible = false;
+        this.slider!.visible = false;
 
         this.sideRedText!.visible = true;
         this.sideYellowText!.visible = true;
@@ -1110,7 +1219,7 @@ class Game
             var ones = this.countOnes();
             var twos = this.countTwos();
             var cols = this.countLegalMoves();
-            this.DEPTH = Math.ceil(this.getDepth(cols, ones, twos));
+            this.DEPTH = Math.ceil(this.difficulty/4 * this.getDepth(cols, ones, twos));
         }
         this.searchedLeafNodes = 0;
 	}

@@ -26,7 +26,6 @@ class Game
     private elapsedTime: number;
     private timer : number;
     private searchedLeafNodes : number;
-    private projectedLeafNodes : number;
     private turnNum: number;
     private difficulty: number; // 0: beginner, 1: easy, 2: medium, 3: hard, 4: expert
     
@@ -63,15 +62,10 @@ class Game
     private evaluationRed : paper.Path | undefined;
     private evaluationBar : paper.Path | undefined;
     private sideBack : paper.Path | undefined;
-    private sideBackOutline : paper.Path | undefined;
     private consoleBack : paper.Path | undefined;
-    private consoleBackOutline : paper.Path | undefined;
     private titleBack : paper.Path | undefined;
-    private titleBackOutline : paper.Path | undefined;
     private helpBack : paper.Path | undefined;
-    private helpBackOutline : paper.Path | undefined;
     private menuBack : paper.Path | undefined;
-    private menuBackOutline : paper.Path | undefined;
     
 
 
@@ -96,7 +90,6 @@ class Game
         this.elapsedTime = 0;
         this.timer = 0;
         this.searchedLeafNodes = 1;
-        this.projectedLeafNodes = 1;
         this.turnNum = 0;
         this.difficulty = 0;
         
@@ -317,104 +310,66 @@ class Game
         this.evaluationBar = new paper.Path.Rectangle(rec4);
         this.evaluationBar.visible = false;
 
-        
-
         var rec5 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(145, 360));
         this.sideBack = new paper.Path.Rectangle(rec5);
         this.sideBack.fillColor = new paper.Color(this.colorDark);
+        this.sideBack.strokeColor = new paper.Color(this.colorGray);
+        this.sideBack.strokeWidth = 5;
         this.sideBack.position.x = 525;
         this.sideBack.position.y = 175;
         this.sideBack.addTo(this.game!);
         this.sideBack.sendToBack();
         this.sideBack.visible = false;
 
-        var rec6 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(155, 370));
-        this.sideBackOutline = new paper.Path.Rectangle(rec6);
-        this.sideBackOutline.fillColor = new paper.Color(this.colorGray);
-        this.sideBackOutline.position.x = 525;
-        this.sideBackOutline.position.y = 175;
-        this.sideBackOutline.addTo(this.game!);
-        this.sideBackOutline.sendToBack();
-        this.sideBackOutline.visible = false;
-
-
 
         var rec7 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(300, 270));
         this.consoleBack = new paper.Path.Rectangle(rec7);
         this.consoleBack.fillColor = new paper.Color(this.colorDark);
+        this.consoleBack.strokeColor = new paper.Color(this.colorGray);
+        this.consoleBack.strokeWidth = 5;
         this.consoleBack.position.x = -188;
         this.consoleBack.position.y = 150;
         this.consoleBack.addTo(this.game!);
         this.consoleBack.sendToBack();
         this.consoleBack.visible = false;
 
-        var rec8 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(310, 280));
-        this.consoleBackOutline = new paper.Path.Rectangle(rec8);
-        this.consoleBackOutline.fillColor = new paper.Color(this.colorGray);
-        this.consoleBackOutline.position.x = -188;
-        this.consoleBackOutline.position.y = 150;
-        this.consoleBackOutline.addTo(this.game!);
-        this.consoleBackOutline.sendToBack();
-        this.consoleBackOutline.visible = false;
 
         var rec9 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(440, 100));
         this.titleBack = new paper.Path.Rectangle(rec9);
         this.titleBack.fillColor = new paper.Color(this.colorDark);
+        this.titleBack.strokeColor = new paper.Color(this.colorGray);
+        this.titleBack.strokeWidth = 5;
         this.titleBack.position.x = 200;
         this.titleBack.position.y = -100;
         this.titleBack.addTo(this.game!);
         this.titleBack.sendToBack();
         this.titleBack.visible = true;
 
-        var rec10 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(450, 110));
-        this.titleBackOutline = new paper.Path.Rectangle(rec10);
-        this.titleBackOutline.fillColor = new paper.Color(this.colorGray);
-        this.titleBackOutline.position.x = 200;
-        this.titleBackOutline.position.y = -100;
-        this.titleBackOutline.addTo(this.game!);
-        this.titleBackOutline.sendToBack();
-        this.titleBackOutline.visible = true;
-
         var rec11 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(440, 100));
         this.helpBack = new paper.Path.Rectangle(rec11);
         this.helpBack.fillColor = new paper.Color(this.colorDark);
+        this.helpBack.strokeColor = new paper.Color(this.colorGray);
+        this.helpBack.strokeWidth = 5;
         this.helpBack.position.x = 200;
         this.helpBack.position.y = 450;
         this.helpBack.addTo(this.game!);
         this.helpBack.sendToBack();
         this.helpBack.visible = true;
 
-        var rec12 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(450, 110));
-        this.helpBackOutline = new paper.Path.Rectangle(rec12);
-        this.helpBackOutline.fillColor = new paper.Color(this.colorGray);
-        this.helpBackOutline.position.x = 200;
-        this.helpBackOutline.position.y = 450;
-        this.helpBackOutline.addTo(this.game!);
-        this.helpBackOutline.sendToBack();
-        this.helpBackOutline.visible = true;
-
         var rec13 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(440, 340));
         this.menuBack = new paper.Path.Rectangle(rec13);
         this.menuBack.fillColor = new paper.Color(this.colorDark);
+        this.menuBack.strokeColor = new paper.Color(this.colorGray);
+        this.menuBack.strokeWidth = 5;
         this.menuBack.position.x = 200;
         this.menuBack.position.y = 175;
         this.menuBack.addTo(this.game!);
         this.menuBack.sendToBack();
         this.menuBack.visible = true;
-
-        var rec14 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(450, 350));
-        this.menuBackOutline = new paper.Path.Rectangle(rec14);
-        this.menuBackOutline.fillColor = new paper.Color(this.colorGray);
-        this.menuBackOutline.position.x = 200;
-        this.menuBackOutline.position.y = 175;
-        this.menuBackOutline.addTo(this.game!);
-        this.menuBackOutline.sendToBack();
-        this.menuBackOutline.visible = true;
         
         
 
         //this.displayBoard!.visible = true;
-
         this.coolDown = false;
     }
 
@@ -467,15 +422,14 @@ class Game
                             this.checkWin();
     
                             this.coolDown = false;
-                            if (!this.isPlayerTurn && !this.gameOver) { //&& !this.botThinking) {
-                                
+                            if (!this.isPlayerTurn && !this.gameOver) {
                                 this.think();
                             }
 
-                            /* pvp evaluation
+                            // pvp evaluation
                             if (!this.gameOver && this.gameType == 2) {
-                                this.think();
-                            }*/
+                                //this.updateEvalutationBar(0);
+                            }
                         } 
                     }
                 }
@@ -667,7 +621,6 @@ class Game
         this.menuYellowText!.visible = false;
         this.menuHighlight!.visible = false;
         this.menuBack!.visible = false;
-        this.menuBackOutline!.visible = false;
 
         this.sideRedText!.visible = true;
         this.sideYellowText!.visible = true;
@@ -676,14 +629,12 @@ class Game
         this.evaluationYellow!.visible = true;
         this.evaluationRed!.visible = true;
         this.sideBack!.visible = true;
-        this.sideBackOutline!.visible = true;
         
         
 
         if (type < 2) {
             this.consoleText!.visible = true;
             this.consoleBack!.visible = true;
-            this.consoleBackOutline!.visible = true;
         }
         //this.winText!.visible = false;
         if (type == 1) {
@@ -876,7 +827,7 @@ class Game
             this.drawWinArrow(result, 3, color);
             return color;
         }
-        if (this.countLegalMoves(this.gameBoard) == 0) {
+        if (this.countLegalMoves() == 0) {
             this.drawnGame();
             return 0;
         }
@@ -952,6 +903,7 @@ class Game
     // Print formatting for heuristic values at each col
 	private printHeuristics(moves : Array<number>, bestMove : number) : void
     {
+        this.updateEvalutationBar(moves[bestMove]);
         var myString = "";
         if (this.FIRST_MOVE) {
             this.FIRST_MOVE = false;
@@ -1016,19 +968,27 @@ class Game
 		}
 		myString += "+-----+-----------+----------+" + "\n";
         this.consoleText!.content = myString;
-        //this.updateEvalutationBar(moves[bestMove]);
 	}
 
     private updateEvalutationBar(bestMove : number) : void
     {
 
+        // Update DEPTH if pvp
+        if (this.gameType == 2) {
+            this.updateDEPTH();
+        }
+
         // An accurate evaluation comes when turnNum and DEPTH are both even-even or odd-odd
         // When they are different, a new evaluation is needed with depth decreased by 1
         var depth = this.DEPTH;
+
+        // Update depth and rethink if necessary
         if (this.turnNum % 2 != depth % 2) {
             depth--;
             bestMove = this.barThink(depth);
-        } else {
+        
+        // If not pvp, then just use bestMove from think
+        } else if (this.gameType == 2) {
             bestMove = this.barThink(depth);
         }
 
@@ -1143,59 +1103,15 @@ class Game
         return board;
     }
 
-
-    // Used to update DEPTH
-    private countLegalMoves(board : Array<Array<number>>) : number {
-        var total = 0;
-        for (var col = 0; col < 7; col++) {
-            if (board[5][col] == 0) {
-                total++;
-            }
-        }
-        return total;
-    }
-
-
-    private get3ColDepth() : number
-    {   
-        var arr = [1,1,1,1,1,1,1,1,1,1,1];
-
-        if (this.difficulty == 1) {
-            arr = [7,7,7,7,7,7,7,7,7,8,8];
-        } else if (this.difficulty == 2) {
-            arr = [9,10,10,9,9,9,8,8,8,8,8];
-        } else if (this.difficulty == 3) {
-            arr = [10,10,10,10,11,11,12,11,10,9,8];
-        } else if (this.difficulty == 4) {
-            arr = [12,12,13,13,14,13,12,11,10,9,8];
-        }
-        //          ( moves remaining )   reduce to index
-        var index = (42 - this.turnNum) - 8;
-        if (index >= 10) {
-            console.log("Bad call to get3ColDepth(): (42 - this.turnNum) - 8 =", (42 - this.turnNum) - 7);
-            return 1;
-        }
-        return arr[index];
-    }
-
     // Update the depth of thinking based on predicted number of moves
 	private updateDEPTH() : void {
 
-        // difficulty 0 always uses depth 1
         if (this.difficulty > 0) {
-            if (this.countLegalMoves(this.gameBoard) <= 3) {
-                this.DEPTH = this.get3ColDepth();
-            } else {
-                var curr = this.projectedSearches(this.DEPTH);
-                var next = this.projectedSearches(this.DEPTH+1);
-                while (next < this.MAX_SEARCHES && next > curr) {
-                    this.DEPTH++;
-                    curr = next;
-                    next = this.projectedSearches(this.DEPTH+1);
-                }
-                this.projectedLeafNodes = curr;
-            } 
-        }   
+            var ones = this.countOnes();
+            var twos = this.countTwos();
+            var cols = this.countLegalMoves();
+            this.DEPTH = Math.ceil(this.getDepth(cols, ones, twos));
+        }
         this.searchedLeafNodes = 0;
 	}
 
@@ -1264,11 +1180,6 @@ class Game
 
             //Update search depth based on projected searches
             this.updateDEPTH();
-
-            // Catches lag causing projectedLeafNodes to exceed MAX_SEARCHES
-            if (this.projectedLeafNodes > this.MAX_SEARCHES) {
-                this.DEPTH--;
-            }
 
             for (var col = 0; col < moves.length; col++) {
 			
@@ -1363,7 +1274,7 @@ class Game
     // - Subsets that consist of only one color (+1 or -1) and empty spaces are worth one point per color in set
     // - Subsets with conflicting colors (both colors present in subset) are worth 0 points
     // - The lower the subsets highest empty space is, the more value the subset is worth
-    // - Subsets with values of +/- 4 are worth MAX_VALUE +/- 1000
+    // - Subsets with values of +/- 4 are worth MAX_VALUE (+/- 1000)
     private heuristic(board : Array<Array<number>>) : number
     {
         
@@ -1516,7 +1427,7 @@ class Game
 
 
 
-
+    // Executes the think() algorithm, but specifically for the evalutation bar
     private barThink(depth : number) : number
     {
         this.timer = 0;
@@ -1558,7 +1469,6 @@ class Game
                 }
             }
         }
-        console.log(alpha);
         this.elapsedTime = new Date().getTime() - startTime;
 		return alpha;
     }
@@ -1567,11 +1477,106 @@ class Game
 
 
 
+    // Counts number of columns that are not full
+    private countLegalMoves() : number {
+        var legalMoves = 0;
+        for (var col = 0; col < 7; col++) {
+            if (this.gameBoard[5][col] == 0) {
+                legalMoves++;
+            }
+        }
+        return legalMoves;
+    }
 
-
-    // Algorithm to set up calls to predict number of heuristic calls given game state and depth
-    private projectedSearches(depth : number) : number
+    // Counts number of columns with only one row open
+    private countOnes() : number
     {
+        var ones = 0;
+        for (var col = 0; col < 7; col++) {
+            if (this.gameBoard[5][col] == 0 && this.gameBoard[4][col] != 0) {
+                ones++;
+            }
+        }
+        return ones;
+    }
+
+    // Counts number of columns with only two rows open
+    private countTwos() : number
+    {
+        var twos = 0;
+        for (var col = 0; col < 7; col++) {
+            if (this.gameBoard[5][col] == 0 && this.gameBoard[4][col] == 0 && this.gameBoard[3][col] == 0) {
+                twos++;
+            }
+        }
+        return twos;
+    }
+
+    // Use previous data collected to return a depth given:
+    // # cols, # cols with only one row open, and # cols with only two rows open
+    private getDepth(cols : number, ones : number, twos : number) : number
+    {
+        if (cols == 7) {
+            var arr = [[7,7,7,8,8,9,11,7],[7,7,7,8,8,10,7],[7,7,8,8,9,8],[7,7,8,8,9],[7,7,8,9],[7,8,8],[7,8],[7]];
+        } else if (cols == 6) {
+            var arr = [[8,8,8,9,10,11,6],[8,8,8,9,12,7],[8,8,9,11,8],[8,8,9,9],[8,9,10],[8,10],[8]];
+        } else if (cols == 5) {
+            var arr = [[8,9,10,12,10,5],[8,9,10,11,6],[9,10,12,7],[9,11,8],[10,9],[10]];
+        } else if (cols == 4) {
+            var arr = [[10,11,14,9,4],[10,12,10,5],[11,11,6],[12,7],[8]];
+        } else if (cols == 3) {
+            var arr = [[12,13,8,3],[14,9,4],[10,5],[6]];
+        } else if (cols == 2) {
+            var arr = [[12,7,2],[8,3],[4]];
+        } else {
+            var arr = [[1,1],[1]];
+        }
+        return arr[twos][ones];
+    }
+
+
+
+    
+    
+
+
+
+
+
+
+
+
+    
+}
+
+
+    /* Testing function
+    private myCountingFunc() : void
+    {
+        var cols = 1;
+        var baseDepth = cols;
+        for (var twos = 0; twos <= cols; twos++) {
+            for (var ones = 0; ones <= cols-twos; ones++) {
+                var depth = baseDepth;
+                var curr = this.projectedSearches(cols, depth, ones, twos);
+                var next = this.projectedSearches(cols, depth+1, ones, twos);
+                while (next < this.MAX_SEARCHES && next > curr) {
+                    depth++
+                    curr = next;
+                    next = this.projectedSearches(cols, depth+1, ones, twos);
+                }
+                console.log(twos, ones, '|', depth, '|', curr);
+            }
+            console.log('-');
+        }
+    }
+    */
+
+    /* testing function
+    // Algorithm to set up calls to predict number of heuristic calls given game state and depth
+    private projectedSearches(cols : number, depth : number, ones : number, twos : number) : number
+    {
+        /*
         // Copy gameboard into matrix of '1's
         var board = [[0,0,0,0,0,0,0],
                     [0,0,0,0,0,0,0],
@@ -1581,8 +1586,8 @@ class Game
                     [0,0,0,0,0,0,0]];
         
         
-        // if 3 cols or less, do not take into account lowest wins
-        if (this.countLegalMoves(this.gameBoard) > 3) {
+        // if 4 cols or less, do not take into account lowest wins
+        if (this.countLegalMoves(this.gameBoard) > 4) {
             var arr = this.getLowestWins(this.gameBoard);
             for (var row = 0; row < 6; row++) {
                 for (var col = 0; col < 7; col++) {
@@ -1596,6 +1601,37 @@ class Game
                 }
             }
         }
+        var _cols = 7;
+        var _depth = 7;
+        var _ones = 0;
+        var _twos = 0;
+        // cut off above
+
+        var board = [[0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0]];
+
+
+        for (var c = 0; c < 7-cols; c++) {
+            for (var r = 0; r < 6; r++) {
+                board[r][c] = 1;
+            }
+        }
+        
+        for (c; c < (7-cols)+ones; c++) {
+            for (var r = 0; r < 5; r++) {
+                board[r][c] = 1;
+            }
+        }
+
+        for (c; c < (7-cols)+ones+twos; c++) {
+            for (var r = 0; r < 4; r++) {
+                board[r][c] = 1;
+            }
+        }
         
 
         // Board state represented, now call recursive counting algorithm.
@@ -1604,10 +1640,12 @@ class Game
             count += this.countOutcomes(board, col, depth-1);
         }
         
-        // After alpha-beta pruning, reduce count by 7^(7-difficulty*2) 2: 7^3, 3: 7^1, 4: 7^-1
-        return count * Math.pow(7, 7-this.difficulty*2);
+        // To account for alpha-beta pruning, alter count by 7^(7-difficulty*2) 2: 7^3, 3: 7^1, 4: 7^-1 --> 1: 7^4 2: 7^3, 3: 7^1, 4: 7^0
+        return count;// * Math.pow(7, 4/3 * (4 - this.difficulty));
     }
+    */
 
+    /* testing function
     private countOutcomes(board : Array<Array<number>>, col : number, depth : number) : number
     {
         if (depth <= 0) {
@@ -1642,15 +1680,9 @@ class Game
         }
         return total;
     }
+    */
 
-
-
-
-
-
-
-
-
+    /* Useful function
     // Returns an arrays containing the lowest win on each col
     private getLowestWins(board : Array<Array<number>>) : Array<number>
     {
@@ -1732,10 +1764,7 @@ class Game
 		}
         return arr;
     }
-}
-
-
-
+    */
 
 
 

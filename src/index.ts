@@ -29,6 +29,7 @@ class Game
     private turnNum: number;
     private difficulty: number; // 0: beginner, 1: easy, 2: medium, 3: hard, 4: expert
     private isHoldingSlider: boolean;
+    private thinkReady: boolean;
     
 
     private DEPTH: number;
@@ -97,6 +98,7 @@ class Game
         this.turnNum = 0;
         this.difficulty = 2;
         this.isHoldingSlider = false;
+        this.thinkReady = false;
         
         this.DEPTH = 1;
         this.MAX_VALUE = 10000000;
@@ -429,6 +431,12 @@ class Game
         if (this.timer >= this.elapsedTime) {
             if (this.gameStarted) {
 
+                if (this.thinkReady) {
+                    this.moveHighlight!.visible = false;
+                    this.thinkReady = false;
+                    this.think();
+                }
+
                 // Help text
                 if (!this.gameOver && this.isPlayerTurn) {
                     if (this.gameType == 2) {
@@ -468,12 +476,13 @@ class Game
     
                             this.coolDown = false;
                             if (!this.isPlayerTurn && !this.gameOver) {
-                                this.think();
+                                this.moveHighlight!.visible = false;
+                                this.thinkReady = true;
                             }
 
                             // pvp evaluation
                             if (!this.gameOver && this.gameType == 2) {
-                                //this.updateEvalutationBar(0);
+                                this.updateEvalutationBar(0);
                             }
                         } 
                     }
@@ -1101,7 +1110,7 @@ class Game
             bestMove = this.barThink(depth);
         }
 
-        if (this.turnNum >= 2) {
+        if (this.turnNum > 2 || (this.turnNum >= 2 && this.gameType < 2)) {
             this.evaluationText!.content = "DEPTH: " + depth;
         }
         
@@ -1552,7 +1561,7 @@ class Game
         var alpha = -color * this.MAX_VALUE;
         
         // If opening, get evaluation from opening data
-		if (this.turnNum < 2) {
+		if (this.turnNum <= 2) {
             var moves = this.openingMove();
             for (var col = 0; col < 7; col++) {
                 if (color == 1) {
@@ -1562,6 +1571,7 @@ class Game
                 }
                 
             }   
+            alpha = Math.abs(alpha);
             
 		} else {
             var alpha = -color * this.MAX_VALUE;
@@ -1642,13 +1652,6 @@ class Game
         }
         return arr[twos][ones];
     }
-
-
-
-    
-    
-
-
 
 
 

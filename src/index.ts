@@ -71,6 +71,7 @@ class Game
     private menuBack : paper.Path | undefined;
     private menuBar : paper.Path | undefined;
     private slider : paper.Path | undefined;
+    private sliderBack : paper.Path | undefined;
     
 
 
@@ -83,7 +84,7 @@ class Game
         this.width = 1200;
         this.height = 800;
         this.GAME_HEIGHT = 280;
-        this.GAME_SHIFT_X = -150;
+        this.GAME_SHIFT_X = -160;
         this.GAME_SHIFT_Y = -90;
         this.coolDown = true;
         this.gameReady = false;
@@ -218,23 +219,22 @@ class Game
         this.menuYellowText.addTo(this.game);
 
         // Setup display for menu bar text
-        this.menuBarTitleText = new paper.PointText(new paper.Point(-50, 20));
-        this.menuBarTitleText.fontFamily = "Consolas";
+        this.menuBarTitleText = new paper.PointText(new paper.Point(-112, 20));
         this.menuBarTitleText.justification = "right";
         this.menuBarTitleText.fontSize = 24;
         this.menuBarTitleText.fillColor = new paper.Color("#1260cc");
         this.menuBarTitleText.visible = true;
-        this.menuBarTitleText.content = "Difficulty     Depth"
+        this.menuBarTitleText.content = "Difficulty       Depth"
         this.menuBarTitleText.addTo(this.game);
 
         // Setup display for menu bar text
-        this.menuBarText = new paper.PointText(new paper.Point(-60, 7));
+        this.menuBarText = new paper.PointText(new paper.Point(-117, 7));
         this.menuBarText.fontFamily = "Consolas";
         this.menuBarText.justification = "right";
         this.menuBarText.fontSize = 16;
         this.menuBarText.fillColor = new paper.Color("white");
         this.menuBarText.visible = true;
-        this.menuBarText.content = "\n\n\nBEGINNER         NONE  \n\n\nEASY         LOW   \n\n\nMEDIUM         MEDIUM\n\n\nHARD         HIGH  \n\n\nEXPERT         MAX   "
+        this.menuBarText.content = "\n\n\nBEGINNER        NONE  \n\n\nEASY        LOW   \n\n\nMEDIUM        MEDIUM\n\n\nHARD        HIGH  \n\n\nEXPERT        MAX   "
         this.menuBarText.addTo(this.game);
 
 
@@ -394,12 +394,12 @@ class Game
         this.menuBack.sendToBack();
         this.menuBack.visible = true;
 
-        var rec14 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(10, 300));
+        var rec14 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(10, 250));
         this.menuBar = new paper.Path.Rectangle(rec14);
         this.menuBar.fillColor = new paper.Color(this.colorDark);
         this.menuBar.strokeColor = new paper.Color(this.colorGray);
         this.menuBar.strokeWidth = 3;
-        this.menuBar.position.x = -150;
+        this.menuBar.position.x = -205;
         this.menuBar.position.y = 175;
         this.menuBar.addTo(this.game!);
         this.menuBar.sendToBack();
@@ -409,10 +409,21 @@ class Game
         this.slider.fillColor = new paper.Color('#ffffff');
         this.slider.strokeColor = new paper.Color('#bbbbbb');
         this.slider.strokeWidth = 3;
-        this.slider.position.x = -150;
+        this.slider.position.x = -205;
         this.slider.position.y = 175;
         this.slider.addTo(this.game!);
         this.slider.visible = true;
+        
+        var rec15 = new paper.Rectangle(new paper.Point(0, 0), new paper.Point(250, 400));
+        this.sliderBack = new paper.Path.Rectangle(rec15);
+        this.sliderBack.fillColor = new paper.Color(this.colorDark);
+        this.sliderBack.strokeColor = new paper.Color(this.colorGray);
+        this.sliderBack.strokeWidth = 5;
+        this.sliderBack.position.x = -205;
+        this.sliderBack.position.y = 175;
+        this.sliderBack.addTo(this.game!);
+        this.sliderBack.sendToBack();
+        this.sliderBack.visible = true;
         
         
 
@@ -622,9 +633,8 @@ class Game
                 this.startGame(2);
             }
 
-            if (!this.isHoldingSlider && Math.abs(245 - x) < 20 && Math.abs(this.slider!.position.y + 133 - y) < 20) {
+            if (!this.isHoldingSlider && Math.abs(189 - x) < 20 && Math.abs(this.slider!.position.y + 133 - y) < 20) {
                 this.isHoldingSlider = true;
-                
             }
 
             

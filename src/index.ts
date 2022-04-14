@@ -1,6 +1,6 @@
-/* Assignment 1: Space Minesweeper
- * CSCI 4611, Spring 2022, University of Minnesota
- * Instructor: Evan Suma Rosenberg <suma@umn.edu>
+/* Title: Connect4-AI
+ * Author: Luke Johnson
+ * Email: lukejohnsonmn@gmail.com
  * License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
  */ 
 
@@ -9,8 +9,6 @@ import { Color, Layer, PaperScope } from 'paper/dist/paper-core';
 
 class Game 
 {
-    // Width and height are defined in project coordinates
-    // This is different than screen coordinates!
     private width : number;
     private height : number;
     private GAME_HEIGHT: number;
@@ -31,12 +29,6 @@ class Game
     private isHoldingSlider: boolean;
     private thinkReady: boolean;
 
-    private prevMove: number;
-    private prevBest: number;
-    private prevEval: number;
-    private currEval: number;
-    
-
     private DEPTH: number;
     private MAX_VALUE: number;
     private WIN_VALUE: number;
@@ -46,9 +38,6 @@ class Game
     private colorDark : string;
     private colorGray : string;
     
-
-    // TypeScript will throw an error if you define a type but don't initialize in the constructor
-    // This can be prevented by including undefined as a second possible type
     private game : paper.Group | undefined;
     private yellowPiece : paper.SymbolDefinition | undefined;
     private redPiece : paper.SymbolDefinition | undefined;
@@ -117,12 +106,6 @@ class Game
         this.difficulty = 2;
         this.isHoldingSlider = false;
         this.thinkReady = false;
-
-        this.prevMove = 0;
-        this.prevBest = 0;
-        this.prevEval = 0;
-        this.currEval = 0;
-        
         this.DEPTH = 1;
         this.MAX_VALUE = 10000000;
         this.WIN_VALUE = 1000;
@@ -175,8 +158,6 @@ class Game
         // We will go over this syntax in class
 
         paper.project.importSVG('./assets/gameboard.svg', (item: paper.Item) => {
-            // The exclamation point tells TypeScript you are certain the variable has been defined
-            //this.displayBoard = item;
             item.addTo(this.game!);
             item.data.isDisplay = true;
             item.visible = false;
@@ -944,7 +925,8 @@ class Game
         this.winText!.position.y = -90;
 
         if (type < 2) {
-            
+            this.consoleText!.visible = true;
+            this.consoleBack!.visible = true;
 
             if (this.difficulty == 0) {
                 
@@ -980,30 +962,7 @@ class Game
                 this.winText!.content = "Bar Depth: Maximum";
                 this.winText!.fillColor = new paper.Color('#1260cc');
             }
-
-            this.eval1Text!.visible = true;
-            this.eval2Text!.visible = true;
-            this.eval3Text!.visible = true;
-            this.eval4Text!.visible = true;
-            this.eval5Text!.visible = true;
-            this.eval6Text!.visible = true;
-            this.eval7Text!.visible = true;
-
-            var myString = "";
-            myString += "MOVE EVALUATIONS" + "\n";
-            myString += "+------+------+--------------+" + "\n";
-            myString += "| move | best |  evaluation  |" + "\n";
-            myString += "+------+------+--------------+" + "\n";
-            for (var i = 0; i < 7; i++) {
-                myString += "|      |      |              |" + "\n";
-            }
-            myString += "+------+------+--------------+"
-
-            this.consoleText!.content = myString;
         }
-
-        this.consoleText!.visible = true;
-        this.consoleBack!.visible = true;
 
         if (type == 1) {
             this.isPlayerTurn = false;
@@ -1030,7 +989,6 @@ class Game
     {
         this.coolDown = true;
         this.turnNum++;
-        this.prevMove = col;
 
         if (!this.gameStarted) {
             this.gameStarted = true;
@@ -1412,64 +1370,11 @@ class Game
         this.evaluationBar.addTo(this.game!);
         
         this.evaluationBar.visible = true;
-
-        if (this.gameType == 2) {
-            this.eval7Text!.content = "\n" + this.eval6Text!.content;
-            this.eval6Text!.content = "\n" + this.eval5Text!.content;
-            this.eval5Text!.content = "\n" + this.eval4Text!.content;
-            this.eval4Text!.content = "\n" + this.eval3Text!.content;
-            this.eval3Text!.content = "\n" + this.eval2Text!.content;
-            this.eval2Text!.content = "\n" + this.eval1Text!.content;
-
-            this.eval7Text!.fillColor = this.eval6Text!.fillColor;
-            this.eval6Text!.fillColor = this.eval5Text!.fillColor;
-            this.eval5Text!.fillColor = this.eval4Text!.fillColor;
-            this.eval4Text!.fillColor = this.eval3Text!.fillColor;
-            this.eval3Text!.fillColor = this.eval2Text!.fillColor;
-            this.eval2Text!.fillColor = this.eval1Text!.fillColor;
-            this.eval1Text!.fillColor = this.eval3Text!.fillColor;
-
-            this.eval7Text!.shadowColor = this.eval6Text!.shadowColor;
-            this.eval6Text!.shadowColor = this.eval5Text!.shadowColor;
-            this.eval5Text!.shadowColor = this.eval4Text!.shadowColor;
-            this.eval4Text!.shadowColor = this.eval3Text!.shadowColor;
-            this.eval3Text!.shadowColor = this.eval2Text!.shadowColor;
-            this.eval2Text!.shadowColor = this.eval1Text!.shadowColor;
-
-            this.eval1Text!.shadowBlur = 10;
-            this.eval2Text!.shadowBlur = 10;
-            this.eval3Text!.shadowBlur = 10;
-            this.eval4Text!.shadowBlur = 10;
-            this.eval5Text!.shadowBlur = 10;
-            this.eval6Text!.shadowBlur = 10;
-            this.eval7Text!.shadowBlur = 10;
-
-            var strength = bestMove - this.prevEval;
-            this.prevEval = bestMove;
-            var evaluation = "";
-
-            if (this.prevMove == this.prevBest) {
-                evaluation = "Best move"
-                this.eval1Text!.shadowColor = new paper.Color('green');
-            } else if (strength > 0) {
-                evaluation = "Brilliant!"
-                this.eval1Text!.shadowColor = new paper.Color('blue');
-            } else if (strength > -5) {
-                evaluation = "Good move"
-                this.eval1Text!.shadowColor = new paper.Color('lime');
-            } else if (strength > -15) {
-                evaluation = "Inaccuracy"
-                this.eval1Text!.shadowColor = new paper.Color('yellow');
-            } else if (strength > -30) {
-                evaluation = "Mistake!"
-                this.eval1Text!.shadowColor = new paper.Color('orange');
-            } else {
-                evaluation = "Blunder!!"
-                this.eval1Text!.shadowColor = new paper.Color('red');
-            }
-            this.eval1Text!.content = "\n\n\n\n   " + this.prevMove + "      " + this.prevBest + "      " + evaluation;
-        }
     }
+
+
+
+    
 
 
     // Calculate space values for each candidate best move
@@ -1898,7 +1803,6 @@ class Game
                     if (color == 1) { // Maximizing player
                         alpha = Math.max(alpha, this.minMaxSearch(this.gameBoard, col, color, depth-1, alpha));
                         if (alpha > prev) {
-                            this.prevBest = col;
                             prev = alpha;
                         }
                     }
@@ -1906,7 +1810,6 @@ class Game
                     else { // Minimizing player       
                         alpha = Math.min(alpha, this.minMaxSearch(this.gameBoard, col, color, depth-1, alpha));
                         if (alpha < prev) {
-                            this.prevBest = col;
                             prev = alpha;
                         }
                     }

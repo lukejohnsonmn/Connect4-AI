@@ -1852,7 +1852,7 @@ class Game
     {
         var twos = 0;
         for (var col = 0; col < 7; col++) {
-            if (this.gameBoard[5][col] == 0 && this.gameBoard[4][col] == 0 && this.gameBoard[3][col] == 0) {
+            if (this.gameBoard[5][col] == 0 && this.gameBoard[4][col] == 0 && this.gameBoard[3][col] != 0) {
                 twos++;
             }
         }
